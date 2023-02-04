@@ -22,7 +22,7 @@ pub fn flex_text(string: impl Into<String>) {
         let mut cx = composer.borrow_mut();
         let id = cx.id(location);
 
-        let typeface = Typeface::new("Noto Sans", FontStyle::bold()).unwrap();
+        let typeface = Typeface::new("sans-serif", FontStyle::bold()).unwrap();
 
         if let Some(widget) = cx.get_mut::<TextWidget>(&id) {
             widget.text = string.into();
