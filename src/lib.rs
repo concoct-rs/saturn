@@ -69,7 +69,7 @@ pub fn app() {
             .justify_content(JustifyContent::SpaceEvenly)
             .flex_direction(FlexDirection::Column)
             .flex_grow(1.)
-            .padding(Padding::from(40.dp()).top(100.dp())),
+            .padding(Padding::from(16.dp()).top(40.dp())),
         || {
             let display = state(|| Display::Balance);
             let currency = state(|| Currency::Bitcoin);

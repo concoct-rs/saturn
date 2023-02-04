@@ -1,6 +1,6 @@
 use accesskit::{Node, NodeId, Role};
 use concoct::{composer::Composer, semantics::LayoutNode, Semantics, Widget};
-use skia_safe::{Color4f, ColorSpace, Font, FontStyle, Paint, TextBlob, Typeface};
+use skia_safe::{Color4f, ColorSpace, Font, Paint, TextBlob, Typeface};
 use skia_safe::{Data, RGB};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::{any, panic::Location, sync::Arc};
@@ -14,7 +14,7 @@ use taffy::{
 thread_local! {
     pub static FONT: Typeface = {
         const BYTES: &[u8] =  include_bytes!("../../assets/NotoSans-Black.ttf");
-        
+
         // Safety: BYTES has a static lifetime
         let data= unsafe { Data::new_bytes(BYTES) };
         Typeface::from_data(data, 0).unwrap()

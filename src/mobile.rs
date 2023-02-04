@@ -2,8 +2,8 @@ use crate::{full_width_button, Currency, CurrencyInputHandler};
 use concoct::composable::container;
 use concoct::composable::state::State;
 use concoct::modify::Gap;
-use concoct::DevicePixels;
 use concoct::modify::{Modifier, Padding};
+use concoct::DevicePixels;
 use taffy::style::{AlignItems, FlexDirection};
 
 #[track_caller]
@@ -14,7 +14,7 @@ pub fn currency_input(amount: State<String>, currency: State<Currency>) {
             .flex_direction(FlexDirection::Column)
             .flex_grow(1.)
             .gap(Gap::default().height(20.dp()))
-            .padding(Padding::default().height(40.dp())),
+            .padding(Padding::default().vertical(40.dp())),
         move || {
             currency_input_button_row(move || {
                 currency_input_button('1', amount, currency);
