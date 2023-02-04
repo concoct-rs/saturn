@@ -45,6 +45,7 @@ pub fn currency_text(currency: State<Currency>, value: State<String>, rate: Stat
             );
 
             button(
+                Modifier::default(),
                 format!(
                     "{}{}",
                     !currency.get().cloned(),

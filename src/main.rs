@@ -1,14 +1,15 @@
 use concoct::composable::material::button;
 use concoct::composable::state::State;
-use concoct::composable::{container, remember, state, stream};
+use concoct::composable::{container, remember, state, stream, text};
 use concoct::modify::keyboard_input::KeyboardHandler;
+use concoct::modify::{Gap, Padding};
 use concoct::{render::run, Modifier};
 use futures::{Stream, StreamExt};
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use skia_safe::RGB;
 use std::time::Duration;
-use taffy::style::{AlignItems, FlexDirection};
+use taffy::prelude::Size;
+use taffy::style::{AlignItems, Dimension, FlexDirection, JustifyContent};
 use tokio::time::interval;
 use tokio_stream::wrappers::IntervalStream;
 use winit::event::{ElementState, VirtualKeyCode};
@@ -47,13 +48,20 @@ enum Display {
     Send { address: Option<String> },
 }
 
+#[tokio::main]
+async fn main() {
+    run(app)
+}
+
 #[track_caller]
 fn app() {
     container(
         Modifier::default()
             .align_items(AlignItems::Center)
+            .justify_content(JustifyContent::SpaceEvenly)
             .flex_direction(FlexDirection::Column)
-            .flex_grow(1.),
+            .flex_grow(1.)
+            .padding(Padding::default().horizontal(Dimension::Points(40.))),
         || {
             let display = state(|| Display::Balance);
             let currency = state(|| Currency::Bitcoin);
@@ -72,12 +80,19 @@ fn app() {
                     currency_text(currency, balance, rate);
 
                     container(
-                        Modifier::default().flex_direction(FlexDirection::Row),
+                        Modifier::default()
+                            .align_items(AlignItems::Stretch)
+                            .flex_direction(FlexDirection::Row)
+                            .gap(Gap::default().width(Dimension::Points(40.)))
+                            .size(Size {
+                                width: Dimension::Percent(1.),
+                                height: Dimension::Undefined,
+                            }),
                         move || {
-                            button("Send", move || {
+                            full_width_button("Send", move || {
                                 *display.get().as_mut() = Display::Send { address: None };
                             });
-                            button("Request", || {});
+                            full_width_button("Request", || {});
                         },
                     )
                 }
@@ -91,20 +106,22 @@ fn app() {
                                 .flex_direction(FlexDirection::Column)
                                 .keyboard_handler(CurrencyInputKeyboardHandler::new(amount)),
                             move || {
-                                button("Cancel", move || {
+                                text(Modifier::default(), &address);
+
+                                button(Modifier::default(), "Cancel", move || {
                                     *display.get().as_mut() = Display::Balance;
                                 });
 
                                 currency_text(currency, amount, rate);
 
-                                button("Send", move || {
-                                    
-                                });
+                                full_width_button("Send", move || {});
                             },
                         );
                     } else {
-                        button("Continue", move || {
-                            *display.get().as_mut() = Display::Send { address: Some("12345".into())};
+                        full_width_button("Continue", move || {
+                            *display.get().as_mut() = Display::Send {
+                                address: Some("12345".into()),
+                            };
                         });
                     }
                 }
@@ -113,9 +130,16 @@ fn app() {
     );
 }
 
-#[tokio::main]
-async fn main() {
-    run(app)
+#[track_caller]
+fn full_width_button(label: impl Into<String>, on_press: impl FnMut() + 'static) {
+    button(
+        Modifier::default().size(Size {
+            width: Dimension::Percent(1.),
+            height: Dimension::Undefined,
+        }),
+        label,
+        on_press,
+    );
 }
 
 pub struct CurrencyInputKeyboardHandler {
