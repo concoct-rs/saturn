@@ -16,7 +16,7 @@ tokio-stream = "0.1.11"
 winit = "0.28.1"
 
 [lib]
-crate_type=["cdylib"]
+crate_type=["lib", "cdylib"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
 skia-safe = { version = "0.58.0", features = ["all-linux"] }
