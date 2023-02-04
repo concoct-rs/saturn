@@ -40,7 +40,7 @@ struct RateResponse {
 async fn make_stream() -> impl Stream<Item = Decimal> {
     Box::pin(
         IntervalStream::new(interval(Duration::from_secs(5))).then(|_| async {
-            let res: RateResponse = reqwest::get("https://api.coincap.io/v2/rates/bitcoin")
+            let res: RateResponse = reqwest::get("http://api.coincap.io/v2/rates/bitcoin")
                 .await
                 .unwrap()
                 .json()

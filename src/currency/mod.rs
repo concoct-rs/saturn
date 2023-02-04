@@ -80,7 +80,7 @@ impl Currency {
         let value: Decimal = value.parse().unwrap_or_default();
         match self {
             Currency::Bitcoin => (value * rate).round_dp(2),
-            Currency::USD => (value / rate).round_dp(8),
+            Currency::USD => (value.checked_div(rate).unwrap_or_default()).round_dp(8),
         }
     }
 }
