@@ -1,6 +1,6 @@
 use concoct::{
     composable::{container, material::button, state::State},
-    Modifier,
+    Modifier, DevicePixels,
 };
 use rust_decimal::Decimal;
 use std::{
@@ -34,7 +34,7 @@ pub fn currency_text(currency: State<Currency>, value: State<String>, rate: Stat
                     .margin(Rect::from_points(20., 20., 50., 50.))
                     .size(Size {
                         width: Dimension::Percent(1.),
-                        height: Dimension::Points(200.),
+                        height:100.dp(),
                     }),
                 move || {
                     flex_text(format!(

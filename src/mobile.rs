@@ -1,9 +1,9 @@
-use crate::{full_width_button, Currency, CurrencyInputKeyboardHandler};
+use crate::{full_width_button, Currency, CurrencyInputHandler};
 use concoct::composable::container;
 use concoct::composable::state::State;
 use concoct::modify::Gap;
 use concoct::DevicePixels;
-use concoct::Modifier;
+use concoct::modify::{Modifier, Padding};
 use taffy::style::{AlignItems, FlexDirection};
 
 #[track_caller]
@@ -13,7 +13,8 @@ pub fn currency_input(amount: State<String>, currency: State<Currency>) {
             .align_items(AlignItems::Stretch)
             .flex_direction(FlexDirection::Column)
             .flex_grow(1.)
-            .gap(Gap::default().height(20.dp())),
+            .gap(Gap::default().height(20.dp()))
+            .padding(Padding::default().height(40.dp())),
         move || {
             currency_input_button_row(move || {
                 currency_input_button('1', amount, currency);
@@ -35,11 +36,11 @@ pub fn currency_input(amount: State<String>, currency: State<Currency>) {
 
             currency_input_button_row(move || {
                 full_width_button(".", move || {
-                    CurrencyInputKeyboardHandler::new(amount, currency).push_decimal()
+                    CurrencyInputHandler::new(amount, currency).push_decimal()
                 });
                 currency_input_button('0', amount, currency);
                 full_width_button("<", move || {
-                    CurrencyInputKeyboardHandler::new(amount, currency).back()
+                    CurrencyInputHandler::new(amount, currency).back()
                 });
             });
         },
@@ -49,7 +50,7 @@ pub fn currency_input(amount: State<String>, currency: State<Currency>) {
 #[track_caller]
 fn currency_input_button(c: char, amount: State<String>, currency: State<Currency>) {
     full_width_button(c, move || {
-        CurrencyInputKeyboardHandler::new(amount, currency).push_char(c);
+        CurrencyInputHandler::new(amount, currency).push_char(c);
     });
 }
 

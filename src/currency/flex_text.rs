@@ -1,12 +1,8 @@
 use accesskit::{Node, NodeId, Role};
-
 use concoct::{composer::Composer, semantics::LayoutNode, Semantics, Widget};
-
-use skia_safe::RGB;
 use skia_safe::{Color4f, ColorSpace, Font, FontStyle, Paint, TextBlob, Typeface};
-
+use skia_safe::{Data, RGB};
 use std::sync::atomic::{AtomicU32, Ordering};
-
 use std::{any, panic::Location, sync::Arc};
 use taffy::prelude::Rect;
 use taffy::style::Dimension;
@@ -15,6 +11,16 @@ use taffy::{
     style::Style,
 };
 
+thread_local! {
+    pub static FONT: Typeface = {
+        const BYTES: &[u8] =  include_bytes!("../../assets/NotoSans-Black.ttf");
+        
+        // Safety: BYTES has a static lifetime
+        let data= unsafe { Data::new_bytes(BYTES) };
+        Typeface::from_data(data, 0).unwrap()
+    };
+}
+
 #[track_caller]
 pub fn flex_text(string: impl Into<String>) {
     let location = Location::caller();
@@ -22,7 +28,7 @@ pub fn flex_text(string: impl Into<String>) {
         let mut cx = composer.borrow_mut();
         let id = cx.id(location);
 
-        let typeface = Typeface::new("sans-serif", FontStyle::bold()).unwrap();
+        let typeface = FONT.try_with(|typeface| typeface.clone()).unwrap();
 
         if let Some(widget) = cx.get_mut::<TextWidget>(&id) {
             widget.text = string.into();
