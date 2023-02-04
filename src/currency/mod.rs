@@ -9,7 +9,7 @@ use std::{
 };
 use taffy::{
     prelude::{Rect, Size},
-    style::{AlignItems, Dimension, FlexDirection},
+    style::{AlignItems, Dimension, FlexDirection, JustifyContent},
 };
 
 mod flex_text;
@@ -20,10 +20,11 @@ pub fn currency_text(currency: State<Currency>, value: State<String>, rate: Stat
     container(
         Modifier::default()
             .align_items(AlignItems::Center)
+            .justify_content(JustifyContent::Center)
             .flex_direction(FlexDirection::Column)
             .size(Size {
                 width: Dimension::Percent(1.),
-                height: Dimension::Points(400.),
+                height: Dimension::Percent(1.),
             }),
         move || {
             container(

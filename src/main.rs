@@ -57,11 +57,11 @@ async fn main() {
 fn app() {
     container(
         Modifier::default()
-            .align_items(AlignItems::Center)
+            .align_items(AlignItems::Stretch)
             .justify_content(JustifyContent::SpaceEvenly)
             .flex_direction(FlexDirection::Column)
             .flex_grow(1.)
-            .padding(Padding::default().horizontal(Dimension::Points(40.))),
+            .padding(Padding::from(Dimension::Points(40.))),
         || {
             let display = state(|| Display::Balance);
             let currency = state(|| Currency::Bitcoin);
@@ -104,6 +104,7 @@ fn app() {
                             Modifier::default()
                                 .align_items(AlignItems::Center)
                                 .flex_direction(FlexDirection::Column)
+                                .flex_grow(1.)
                                 .keyboard_handler(CurrencyInputKeyboardHandler::new(
                                     amount, currency,
                                 )),
