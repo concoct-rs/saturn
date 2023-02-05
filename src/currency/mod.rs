@@ -32,7 +32,7 @@ pub fn currency_text(currency: State<Currency>, value: State<String>, rate: Stat
                     .margin(Rect::from_points(20., 20., 50., 50.))
                     .size(Size {
                         width: Dimension::Percent(1.),
-                        height: 200.dp(),
+                        height: Dimension::Points(200.dp()),
                     }),
                 move || {
                     flex_text(format!(

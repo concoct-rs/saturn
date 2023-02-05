@@ -1,4 +1,7 @@
-use concoct::composable::material::button;
+use concoct::composable::material::{
+    button,
+    icon::{icon, Icon},
+};
 use concoct::composable::state::State;
 use concoct::composable::{container, remember, state, stream, text};
 use concoct::modify::keyboard_input::KeyboardHandler;
@@ -69,7 +72,7 @@ pub fn app() {
             .justify_content(JustifyContent::SpaceEvenly)
             .flex_direction(FlexDirection::Column)
             .flex_grow(1.)
-            .padding(Padding::from(16.dp()).top(40.dp())),
+            .padding(Padding::from(Dimension::Points(16.dp())).top(Dimension::Points(40.dp()))),
         || {
             let display = state(|| Display::Balance);
             let currency = state(|| Currency::Bitcoin);
@@ -116,6 +119,8 @@ pub fn app() {
                                 .keyboard_handler(CurrencyInputHandler::new(amount, currency)),
                             move || {
                                 text(Modifier::default(), &address);
+
+                                icon(Modifier::default(), Icon::ArrowBack, "Back");
 
                                 button(Modifier::default(), "Cancel", move || {
                                     *display.get().as_mut() = Display::Balance;

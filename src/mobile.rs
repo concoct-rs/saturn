@@ -4,7 +4,7 @@ use concoct::composable::state::State;
 use concoct::modify::Gap;
 use concoct::modify::{Modifier, Padding};
 use concoct::DevicePixels;
-use taffy::style::{AlignItems, FlexDirection};
+use taffy::style::{AlignItems, FlexDirection, Dimension};
 
 #[track_caller]
 pub fn currency_input(amount: State<String>, currency: State<Currency>) {
@@ -13,8 +13,8 @@ pub fn currency_input(amount: State<String>, currency: State<Currency>) {
             .align_items(AlignItems::Stretch)
             .flex_direction(FlexDirection::Column)
             .flex_grow(1.)
-            .gap(Gap::default().height(20.dp()))
-            .padding(Padding::default().vertical(40.dp())),
+            .gap(Gap::default().height(Dimension::Points(20.dp())))
+            .padding(Padding::default().vertical(Dimension::Points(40.dp()))),
         move || {
             currency_input_button_row(move || {
                 currency_input_button('1', amount, currency);
@@ -61,7 +61,7 @@ fn currency_input_button_row(composable: impl FnMut() + 'static) {
             .align_items(AlignItems::Stretch)
             .flex_direction(FlexDirection::Row)
             .flex_grow(1.)
-            .gap(Gap::default().width(20.dp())),
+            .gap(Gap::default().width(Dimension::Points(20.dp()))),
         composable,
     );
 }
