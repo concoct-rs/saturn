@@ -9,7 +9,7 @@ use taffy::style::{AlignItems, FlexDirection, Dimension};
 #[track_caller]
 pub fn currency_input(amount: State<String>, currency: State<Currency>) {
     container(
-        Modifier::default()
+        Modifier
             .align_items(AlignItems::Stretch)
             .flex_direction(FlexDirection::Column)
             .flex_grow(1.)
@@ -57,7 +57,7 @@ fn currency_input_button(c: char, amount: State<String>, currency: State<Currenc
 #[track_caller]
 fn currency_input_button_row(composable: impl FnMut() + 'static) {
     container(
-        Modifier::default()
+        Modifier
             .align_items(AlignItems::Stretch)
             .flex_direction(FlexDirection::Row)
             .flex_grow(1.)

@@ -1,6 +1,6 @@
 use concoct::{
-    composable::{container, material::button, state::State},
-    DevicePixels, Modifier,
+    composable::{container, material::button, state::State, text},
+    DevicePixels, Modifier, modify::{container::ContainerModifier, ModifyExt},
 };
 use rust_decimal::Decimal;
 use std::{
@@ -18,14 +18,14 @@ use flex_text::flex_text;
 #[track_caller]
 pub fn currency_text(currency: State<Currency>, value: State<String>, rate: State<Decimal>) {
     container(
-        Modifier::default()
+        Modifier
             .align_items(AlignItems::Center)
             .justify_content(JustifyContent::Center)
             .flex_direction(FlexDirection::Column)
             .flex_grow(1.),
         move || {
             container(
-                Modifier::default()
+                Modifier
                     .align_items(AlignItems::Center)
                     .justify_content(JustifyContent::Center)
                     .flex_direction(FlexDirection::Column)
@@ -44,15 +44,15 @@ pub fn currency_text(currency: State<Currency>, value: State<String>, rate: Stat
             );
 
             button(
-                Modifier::default(),
-                format!(
+                Modifier,
+                move || text(Modifier, format!(
                     "{}{}",
                     !currency.get().cloned(),
                     currency
                         .get()
                         .cloned()
                         .convert(&*value.get().as_ref(), rate.get().cloned())
-                ),
+                )),
                 move || {
                     let converted = currency
                         .get()

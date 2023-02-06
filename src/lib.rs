@@ -1,13 +1,17 @@
-use concoct::composable::material::{
-    button,
-    icon::{icon, Icon},
-};
 use concoct::composable::state::State;
 use concoct::composable::{container, remember, state, stream, text};
+use concoct::modify::container::{Gap, Padding};
 use concoct::modify::keyboard_input::KeyboardHandler;
-use concoct::modify::{Gap, Padding};
+use concoct::modify::ModifyExt;
 use concoct::DevicePixels;
 use concoct::Modifier;
+use concoct::{
+    composable::material::{
+        button,
+        icon::{icon, Icon},
+    },
+    modify::container::ContainerModifier,
+};
 use futures::{Stream, StreamExt};
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -67,7 +71,7 @@ enum Display {
 #[track_caller]
 pub fn app() {
     container(
-        Modifier::default()
+        Modifier
             .align_items(AlignItems::Stretch)
             .justify_content(JustifyContent::SpaceEvenly)
             .flex_direction(FlexDirection::Column)
@@ -78,7 +82,7 @@ pub fn app() {
             let currency = state(|| Currency::Bitcoin);
 
             let rate = state(|| Decimal::ZERO);
-            remember(&[], || {
+            remember([], || {
                 stream(make_stream(), move |value| {
                     *rate.get().as_mut() = value;
                 })
@@ -91,14 +95,13 @@ pub fn app() {
                     currency_text(currency, balance, rate);
 
                     container(
-                        Modifier::default()
+                        Modifier
                             .align_items(AlignItems::Stretch)
                             .flex_direction(FlexDirection::Row)
-                            .gap(Gap::default().width(Dimension::Points(40.)))
-                            .size(Size {
-                                width: Dimension::Percent(1.),
-                                height: Dimension::Undefined,
-                            }),
+                            .gap(Gap::default().width(Dimension::Points(40.))), /* .size(Size {
+                                                                                    width: Dimension::Percent(1.),
+                                                                                    height: Dimension::Undefined,
+                                                                                })*/
                         move || {
                             full_width_button("Send", move || {
                                 *display.get().as_mut() = Display::Send { address: None };
@@ -112,19 +115,21 @@ pub fn app() {
                         let amount = state(|| String::from("0"));
 
                         container(
-                            Modifier::default()
+                            Modifier
                                 .align_items(AlignItems::Stretch)
                                 .flex_direction(FlexDirection::Column)
                                 .flex_grow(1.)
                                 .keyboard_handler(CurrencyInputHandler::new(amount, currency)),
                             move || {
-                                text(Modifier::default(), &address);
+                                text(Modifier, &address);
 
-                                icon(Modifier::default(), Icon::ArrowBack, "Back");
-
-                                button(Modifier::default(), "Cancel", move || {
-                                    *display.get().as_mut() = Display::Balance;
-                                });
+                                button(
+                                    Modifier,
+                                    || icon(Modifier, Icon::ArrowBack, "Back"),
+                                    move || {
+                                        *display.get().as_mut() = Display::Balance;
+                                    },
+                                );
 
                                 currency_text(currency, amount, rate);
 
@@ -149,12 +154,14 @@ pub fn app() {
 
 #[track_caller]
 fn full_width_button(label: impl Into<String>, on_press: impl FnMut() + 'static) {
+    let label = label.into();
+
     button(
-        Modifier::default().size(Size {
+        Modifier.size(Size {
             width: Dimension::Percent(1.),
             height: Dimension::Undefined,
         }),
-        label,
+        move || text(Modifier, label.clone()),
         on_press,
     );
 }
