@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 accesskit = "0.8.1"
-concoct = { git = "https://github.com/concoct-rs/concoct" }
+# concoct = { git = "https://github.com/concoct-rs/concoct" }
+concoct = { path = "../concoct" }
 futures = "0.3.26"
 rust_decimal = "1.28.0"
 serde = { version = "1.0.152", features = ["derive"] }

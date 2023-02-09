@@ -1,6 +1,12 @@
 use concoct::{
-    composable::{container, material::button, state::State, text},
-    DevicePixels, Modifier, modify::{container::ContainerModifier, ModifyExt},
+    composable::{
+        container,
+        material::{button, Button},
+        state::State,
+        Container, Text,
+    },
+    modify::ModifyExt,
+    DevicePixels, Modifier,
 };
 use rust_decimal::Decimal;
 use std::{
@@ -17,54 +23,51 @@ use flex_text::flex_text;
 
 #[track_caller]
 pub fn currency_text(currency: State<Currency>, value: State<String>, rate: State<Decimal>) {
-    container(
-        Modifier
-            .align_items(AlignItems::Center)
-            .justify_content(JustifyContent::Center)
-            .flex_direction(FlexDirection::Column)
-            .flex_grow(1.),
-        move || {
-            container(
-                Modifier
-                    .align_items(AlignItems::Center)
-                    .justify_content(JustifyContent::Center)
-                    .flex_direction(FlexDirection::Column)
-                    .margin(Rect::from_points(20., 20., 50., 50.))
-                    .size(Size {
-                        width: Dimension::Percent(1.),
-                        height: Dimension::Points(200.dp()),
-                    }),
-                move || {
-                    flex_text(format!(
-                        "{}{}",
-                        currency.get().cloned(),
-                        value.get().as_ref()
-                    ));
-                },
-            );
+    Container::build_column(move || {
+        Container::build_column(move || {
+            flex_text(format!(
+                "{}{}",
+                currency.get().cloned(),
+                value.get().as_ref()
+            ));
+        })
+        .align_items(AlignItems::Center)
+        .justify_content(JustifyContent::Center)
+        .flex_direction(FlexDirection::Column)
+        .margin(Rect::from_points(20., 20., 50., 50.))
+        .size(Size {
+            width: Dimension::Percent(1.),
+            height: Dimension::Points(200.dp()),
+        })
+        .view();
 
-            button(
-                Modifier,
-                move || text(Modifier, format!(
+        Button::new(
+            move || {
+                let converted = currency
+                    .get()
+                    .cloned()
+                    .convert(&*value.get().as_ref(), rate.get().cloned())
+                    .to_string();
+                *value.get().as_mut() = converted;
+                *currency.get().as_mut() = !currency.get().cloned();
+            },
+            move || {
+                Text::new(format!(
                     "{}{}",
                     !currency.get().cloned(),
                     currency
                         .get()
                         .cloned()
                         .convert(&*value.get().as_ref(), rate.get().cloned())
-                )),
-                move || {
-                    let converted = currency
-                        .get()
-                        .cloned()
-                        .convert(&*value.get().as_ref(), rate.get().cloned())
-                        .to_string();
-                    *value.get().as_mut() = converted;
-                    *currency.get().as_mut() = !currency.get().cloned();
-                },
-            );
-        },
-    );
+                ))
+            },
+        );
+    })
+    .align_items(AlignItems::Center)
+    .justify_content(JustifyContent::Center)
+    .flex_direction(FlexDirection::Column)
+    .flex_grow(1.)
+    .view()
 }
 
 #[derive(Clone, Copy)]
