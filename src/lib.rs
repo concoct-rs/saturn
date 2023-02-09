@@ -1,27 +1,16 @@
 use concoct::composable::container::Padding;
-use concoct::composable::state::State;
-use concoct::composable::{
-    container::Gap,
-    material::{
-        icon::{icon, Icon},
-        Button,
-    },
-    Text,
-};
+use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container};
-use concoct::modify::handler::keyboard_input::KeyboardHandler;
-use concoct::modify::HandlerModifier;
 use concoct::DevicePixels;
-use concoct::Modifier;
 use futures::{Stream, StreamExt};
 use rust_decimal::Decimal;
+use screen::{balance_screen, request_screen, send_screen, Screen};
 use serde::Deserialize;
 use std::time::Duration;
 use taffy::prelude::Size;
-use taffy::style::{AlignItems, Dimension, FlexDirection, JustifyContent};
+use taffy::style::{AlignItems, Dimension, JustifyContent};
 use tokio::time::interval;
 use tokio_stream::wrappers::IntervalStream;
-use winit::event::{ElementState, VirtualKeyCode};
 
 #[cfg(target_os = "android")]
 #[no_mangle]
@@ -33,7 +22,9 @@ fn android_main(android_app: android_activity::AndroidApp) {
 }
 
 mod currency;
-use currency::{currency_text, Currency};
+use currency::Currency;
+
+mod screen;
 
 #[cfg(target_os = "android")]
 mod mobile;
@@ -63,16 +54,10 @@ async fn make_stream() -> impl Stream<Item = Decimal> {
     )
 }
 
-#[derive(Clone)]
-enum Display {
-    Balance,
-    Send { address: Option<String> },
-}
-
 #[track_caller]
 pub fn app() {
     Container::build_column(|| {
-        let display = state(|| Display::Balance);
+        let display = state(|| Screen::Balance);
         let currency = state(|| Currency::Bitcoin);
 
         let rate = state(|| Decimal::ZERO);
@@ -84,56 +69,10 @@ pub fn app() {
         });
 
         match display.get().cloned() {
-            Display::Balance => {
-                let balance = state(|| String::from("100"));
-
-                currency_text(currency, balance, rate);
-
-                Container::build_row(move || {
-                    full_width_button("Send", move || {
-                        *display.get().as_mut() = Display::Send { address: None };
-                    });
-                    full_width_button("Request", || {});
-                })
-                .flex_direction(FlexDirection::Row)
-                .gap(Gap::default().width(Dimension::Points(40.)))
-                .view()
-            }
-            Display::Send { address } => {
-                if let Some(address) = address {
-                    let amount = state(|| String::from("0"));
-
-                    Container::build_column(move || {
-                        Text::new(&address);
-
-                        Button::new(
-                            move || {
-                                *display.get().as_mut() = Display::Balance;
-                            },
-                            || icon(Modifier, Icon::ArrowBack, "Back"),
-                        );
-
-                        currency_text(currency, amount, rate);
-
-                        #[cfg(target_os = "android")]
-                        mobile::currency_input(amount, currency);
-
-                        full_width_button("Send", move || {});
-                    })
-                    .align_items(AlignItems::Stretch)
-                    .flex_direction(FlexDirection::Column)
-                    .flex_grow(1.)
-                    .modifier(
-                        Modifier.keyboard_handler(CurrencyInputHandler::new(amount, currency)),
-                    )
-                    .view()
-                } else {
-                    full_width_button("Continue", move || {
-                        *display.get().as_mut() = Display::Send {
-                            address: Some("12345".into()),
-                        };
-                    });
-                }
+            Screen::Balance => balance_screen(display, currency, rate.get().cloned()),
+            Screen::Send => send_screen(display, currency, rate.get().cloned()),
+            Screen::Request(request) => {
+                request_screen(request, display, currency, rate.get().cloned())
             }
         }
     })
@@ -154,71 +93,4 @@ fn full_width_button(label: impl Into<String>, on_press: impl FnMut() + 'static)
             height: Dimension::Points(40.dp()),
         })
         .view()
-}
-
-pub struct CurrencyInputHandler {
-    value: State<String>,
-    currency: State<Currency>,
-}
-
-impl CurrencyInputHandler {
-    fn new(value: State<String>, currency: State<Currency>) -> Self {
-        Self { value, currency }
-    }
-
-    fn push_char(&self, c: char) {
-        let (max_integer, max_decimal_places) = match self.currency.get().cloned() {
-            Currency::Bitcoin => (2, 8),
-            Currency::USD => (10, 2),
-        };
-
-        if let Some(pos) = self
-            .value
-            .get()
-            .cloned()
-            .chars()
-            .rev()
-            .position(|c| c == '.')
-        {
-            if pos >= max_decimal_places {
-                return;
-            }
-        } else if self.value.get().as_ref().len() > max_integer {
-            return;
-        }
-
-        if &*self.value.get().as_ref() == "0" {
-            self.value.get().as_mut().pop();
-        }
-
-        self.value.get().as_mut().push(c)
-    }
-
-    fn back(&self) {
-        self.value.get().as_mut().pop();
-
-        if self.value.get().as_ref().is_empty() {
-            self.value.get().as_mut().push('0');
-        }
-    }
-
-    fn push_decimal(&self) {
-        if !self.value.get().as_ref().contains('.') {
-            self.value.get().as_mut().push('.');
-        }
-    }
-}
-
-impl KeyboardHandler for CurrencyInputHandler {
-    fn handle_keyboard_input(&mut self, state: ElementState, virtual_keycode: VirtualKeyCode) {
-        if state == ElementState::Pressed {
-            match virtual_keycode {
-                VirtualKeyCode::Key0 | VirtualKeyCode::Numpad0 => self.push_char('0'),
-                VirtualKeyCode::Key1 | VirtualKeyCode::Numpad1 => self.push_char('1'),
-                VirtualKeyCode::Back => self.back(),
-                VirtualKeyCode::Period => self.push_decimal(),
-                _ => {}
-            }
-        }
-    }
 }

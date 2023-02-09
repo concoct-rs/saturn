@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 accesskit = "0.8.1"
+android-intent = "0.2.0"
 # concoct = { git = "https://github.com/concoct-rs/concoct" }
 concoct = { path = "../concoct" }
 futures = "0.3.26"
