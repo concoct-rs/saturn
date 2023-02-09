@@ -1,17 +1,16 @@
 use concoct::composable::container::Padding;
 use concoct::composable::state::State;
-use concoct::composable::{container, remember, state, stream, Container};
 use concoct::composable::{
     container::Gap,
     material::{
-        button,
         icon::{icon, Icon},
         Button,
     },
     Text,
 };
+use concoct::composable::{remember, state, stream, Container};
 use concoct::modify::handler::keyboard_input::KeyboardHandler;
-use concoct::modify::{ModifyExt, HandlerModifier};
+use concoct::modify::HandlerModifier;
 use concoct::DevicePixels;
 use concoct::Modifier;
 use futures::{Stream, StreamExt};
@@ -77,13 +76,12 @@ pub fn app() {
         let currency = state(|| Currency::Bitcoin);
 
         let rate = state(|| Decimal::ZERO);
-        /*
+
         remember([], || {
             stream(make_stream(), move |value| {
                 *rate.get().as_mut() = value;
             })
         });
-         */
 
         match display.get().cloned() {
             Display::Balance => {
@@ -97,7 +95,6 @@ pub fn app() {
                     });
                     full_width_button("Request", || {});
                 })
-                .align_items(AlignItems::Stretch)
                 .flex_direction(FlexDirection::Row)
                 .gap(Gap::default().width(Dimension::Points(40.)))
                 .view()
@@ -128,7 +125,8 @@ pub fn app() {
                     .flex_grow(1.)
                     .modifier(
                         Modifier.keyboard_handler(CurrencyInputHandler::new(amount, currency)),
-                    ).view()
+                    )
+                    .view()
                 } else {
                     full_width_button("Continue", move || {
                         *display.get().as_mut() = Display::Send {
@@ -142,20 +140,20 @@ pub fn app() {
     .align_items(AlignItems::Stretch)
     .justify_content(JustifyContent::SpaceEvenly)
     .flex_grow(1.)
-    .padding(Padding::from(Dimension::Points(16.dp())).top(Dimension::Points(40.dp()))).view();
+    .padding(Padding::from(Dimension::Points(16.dp())).top(Dimension::Points(40.dp())))
+    .view()
 }
 
 #[track_caller]
 fn full_width_button(label: impl Into<String>, on_press: impl FnMut() + 'static) {
     let label = label.into();
 
-    /*
-    ).size(Size {
-        width: Dimension::Percent(1.),
-        height: Dimension::Undefined,
-    }) */
-
-    Button::build(on_press, move || Text::new(label.clone())).view();
+    Button::build(on_press, move || Text::new(label.clone()))
+        .size(Size {
+            width: Dimension::Percent(1.),
+            height: Dimension::Points(40.dp()),
+        })
+        .view()
 }
 
 pub struct CurrencyInputHandler {

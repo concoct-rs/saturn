@@ -1,12 +1,6 @@
 use concoct::{
-    composable::{
-        container,
-        material::{button, Button},
-        state::State,
-        Container, Text,
-    },
-    modify::ModifyExt,
-    DevicePixels, Modifier,
+    composable::{material::Button, state::State, Container, Text},
+    DevicePixels,
 };
 use rust_decimal::Decimal;
 use std::{
