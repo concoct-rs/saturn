@@ -61,19 +61,17 @@ pub fn app() {
         let currency = state(|| Currency::Bitcoin);
 
         let rate = state(|| Decimal::ZERO);
-
         remember([], || {
             stream(make_stream(), move |value| {
                 *rate.get().as_mut() = value;
             })
         });
 
+        let current_rate = rate.get().cloned();
         match display.get().cloned() {
-            Screen::Balance => balance_screen(display, currency, rate.get().cloned()),
-            Screen::Send => send_screen(display, currency, rate.get().cloned()),
-            Screen::Request(request) => {
-                request_screen(request, display, currency, rate.get().cloned())
-            }
+            Screen::Balance => balance_screen(display, currency, current_rate),
+            Screen::Send => send_screen(display, currency, current_rate),
+            Screen::Request(request) => request_screen(request, display, currency, current_rate),
         }
     })
     .align_items(AlignItems::Stretch)

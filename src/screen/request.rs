@@ -28,20 +28,20 @@ pub fn request_screen(
 
                 Text::new("12345");
 
-                Button::new(|| {}, || Text::new("Share"));
+                let label = if let Some(amount) = amount.get().cloned() {
+                    amount
+                } else {
+                    String::from("Add amount")
+                };
+                full_width_button(label, move || {
+                    *display.get().as_mut() = Screen::Request(RequestScreen::Amount);
+                });
 
-                Button::new(
-                    move || {
-                        *display.get().as_mut() = Screen::Request(RequestScreen::Amount);
-                    },
-                    move || {
-                        if let Some(amount) = amount.get().cloned() {
-                            Text::new(amount)
-                        } else {
-                            Text::new("Add amount")
-                        }
-                    },
-                )
+                if cfg!(platform = "android") {
+                    full_width_button("Share", || {});
+                } else {
+                    full_width_button("Copy", || {});
+                }
             }
             RequestScreen::Amount => {
                 let new_amount = state(|| String::from("0"));

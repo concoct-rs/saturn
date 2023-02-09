@@ -35,9 +35,6 @@ pub fn send_screen(display: State<Screen>, currency: State<Currency>, rate: Deci
 
             currency_input(amount, currency, rate);
 
-            #[cfg(target_os = "android")]
-            mobile::currency_input(amount, currency);
-
             full_width_button("Send", move || {});
         })
         .align_items(AlignItems::Stretch)
