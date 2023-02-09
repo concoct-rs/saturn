@@ -39,7 +39,7 @@ pub fn request_screen(
                 });
 
                 #[cfg(target_os = "android")]
-                full_width_button("Share", || {
+                full_width_button("Share", move || {
                     use android_intent::{with_current_env, Action, Extra, Intent};
 
                     with_current_env(|env| {

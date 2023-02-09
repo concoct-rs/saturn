@@ -14,29 +14,29 @@ use taffy::style::{AlignItems, Dimension};
 pub fn currency_input(amount: State<String>, currency: State<Currency>) {
     Container::build_column(move || {
         currency_input_button_row(move || {
-            currency_input_button('1', amount, currency);
-            currency_input_button('2', amount, currency);
-            currency_input_button('3', amount, currency);
+            currency_input_char_button('1', amount, currency);
+            currency_input_char_button('2', amount, currency);
+            currency_input_char_button('3', amount, currency);
         });
 
         currency_input_button_row(move || {
-            currency_input_button('4', amount, currency);
-            currency_input_button('5', amount, currency);
-            currency_input_button('6', amount, currency);
+            currency_input_char_button('4', amount, currency);
+            currency_input_char_button('5', amount, currency);
+            currency_input_char_button('6', amount, currency);
         });
 
         currency_input_button_row(move || {
-            currency_input_button('7', amount, currency);
-            currency_input_button('8', amount, currency);
-            currency_input_button('9', amount, currency);
+            currency_input_char_button('7', amount, currency);
+            currency_input_char_button('8', amount, currency);
+            currency_input_char_button('9', amount, currency);
         });
 
         currency_input_button_row(move || {
-            full_width_button(".", move || {
+            currency_input_button(".", move || {
                 CurrencyInputHandler::new(amount, currency).push_decimal()
             });
-            currency_input_button('0', amount, currency);
-            full_width_button("<", move || {
+            currency_input_char_button('0', amount, currency);
+            currency_input_button("<", move || {
                 CurrencyInputHandler::new(amount, currency).back()
             });
         });
@@ -49,19 +49,22 @@ pub fn currency_input(amount: State<String>, currency: State<Currency>) {
 }
 
 #[track_caller]
-fn currency_input_button(c: char, amount: State<String>, currency: State<Currency>) {
-    Button::build(
-        move || {
-            CurrencyInputHandler::new(amount, currency).push_char(c);
-        },
-        move || Text::new(c),
-    )
-    .colors(ButtonColors::from(Color4f::new(0., 0., 0., 0.)))
-    .size(Size {
-        width: Dimension::Percent(1.),
-        height: Dimension::Undefined,
+fn currency_input_button(label: impl Into<String>, on_press: impl FnMut() + 'static) {
+    let label = label.into();
+    Button::build(on_press, move || Text::new(label.clone()))
+        .colors(ButtonColors::from(Color4f::new(0., 0., 0., 0.)))
+        .size(Size {
+            width: Dimension::Percent(1.),
+            height: Dimension::Undefined,
+        })
+        .view()
+}
+
+#[track_caller]
+fn currency_input_char_button(c: char, amount: State<String>, currency: State<Currency>) {
+    currency_input_button(c, move || {
+        CurrencyInputHandler::new(amount, currency).push_char(c);
     })
-    .view();
 }
 
 #[track_caller]
