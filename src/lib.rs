@@ -4,7 +4,6 @@ use concoct::composable::{remember, state, stream, Container};
 use concoct::DevicePixels;
 use futures::{Stream, StreamExt};
 use rust_decimal::Decimal;
-use screen::{balance_screen, request_screen, send_screen, Screen};
 use serde::Deserialize;
 use std::time::Duration;
 use taffy::prelude::Size;
@@ -25,9 +24,7 @@ mod currency;
 use currency::Currency;
 
 mod screen;
-
-#[cfg(target_os = "android")]
-mod mobile;
+use screen::{balance_screen, request_screen, send_screen, Screen};
 
 #[derive(Deserialize)]
 struct RateResponseData {

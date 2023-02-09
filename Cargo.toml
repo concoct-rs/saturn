@@ -31,6 +31,7 @@ skia-safe = { version = "0.58.0", features = ["all-windows"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android-activity = { version = "0.4.0", features = ["native-activity"] }
+android-intent = "0.2.0"
 skia-safe = { version = "0.58.0", features = ["gl", "textlayout"] }
 reqwest = { version = "0.11.14", features = ["json", "native-tls-vendored"] }
 

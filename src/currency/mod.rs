@@ -17,6 +17,9 @@ use winit::event::{ElementState, VirtualKeyCode};
 mod flex_text;
 use flex_text::flex_text;
 
+#[cfg(target_os = "android")]
+mod mobile;
+
 #[derive(Clone, Copy)]
 pub enum Currency {
     Bitcoin,

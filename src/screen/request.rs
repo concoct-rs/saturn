@@ -1,6 +1,7 @@
 use super::{RequestScreen, Screen};
 use crate::currency::{currency_input, Currency};
 use crate::full_width_button;
+
 use concoct::composable::state::State;
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{state, Container};
@@ -37,11 +38,22 @@ pub fn request_screen(
                     *display.get().as_mut() = Screen::Request(RequestScreen::Amount);
                 });
 
-                if cfg!(platform = "android") {
-                    full_width_button("Share", || {});
-                } else {
-                    full_width_button("Copy", || {});
-                }
+                #[cfg(target_os = "android")]
+                full_width_button("Share", || {
+                    use android_intent::{with_current_env, Action, Extra, Intent};
+
+                    with_current_env(|env| {
+                        Intent::new(env, Action::Send)
+                            .with_type("text/plain")
+                            .with_extra(Extra::Text, "Hello World!")
+                            .into_chooser()
+                            .start_activity()
+                            .unwrap()
+                    })
+                });
+
+                #[cfg(not(target_os = "android"))]
+                full_width_button("Copy", || {});
             }
             RequestScreen::Amount => {
                 let new_amount = state(|| String::from("0"));
