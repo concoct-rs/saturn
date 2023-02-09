@@ -1,9 +1,14 @@
+use bitcoin_hashes::{sha256, Hash};
 use concoct::composable::container::Padding;
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container};
 use concoct::DevicePixels;
 use futures::{Stream, StreamExt};
+use lightning::ln::{PaymentHash, PaymentSecret};
+use lightning_invoice::{Invoice, InvoiceBuilder};
+use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use secp256k1::{Secp256k1, SecretKey};
 use serde::Deserialize;
 use std::time::Duration;
 use taffy::prelude::Size;
@@ -25,6 +30,36 @@ use currency::Currency;
 
 mod screen;
 use screen::{balance_screen, request_screen, send_screen, Screen};
+
+fn new_invoice(amount: Option<Decimal>) -> Invoice {
+    let private_key = SecretKey::from_slice(
+        &[
+            0xe1, 0x26, 0xf6, 0x8f, 0x7e, 0xaf, 0xcc, 0x8b, 0x74, 0xf5, 0x4d, 0x26, 0x9f, 0xe2,
+            0x06, 0xbe, 0x71, 0x50, 0x00, 0xf9, 0x4d, 0xac, 0x06, 0x7d, 0x1c, 0x04, 0xa8, 0xca,
+            0x3b, 0x2d, 0xb7, 0x34,
+        ][..],
+    )
+    .unwrap();
+
+    let payment_hash = sha256::Hash::from_slice(&[0; 32][..]).unwrap();
+    let payment_secret = PaymentSecret([42u8; 32]);
+
+    let mut builder = InvoiceBuilder::new(lightning_invoice::Currency::Bitcoin)
+        .description("Coins pls!".into())
+        .payment_hash(payment_hash)
+        .payment_secret(payment_secret)
+        .current_timestamp()
+        .min_final_cltv_expiry(144);
+
+    if let Some(btc) = amount {
+        let millisatoshis = (btc * Decimal::new(10i64.pow(11), 0)).to_u64().unwrap();
+        builder = builder.amount_milli_satoshis(millisatoshis);
+    }
+
+    builder
+        .build_signed(|hash| Secp256k1::new().sign_ecdsa_recoverable(hash, &private_key))
+        .unwrap()
+}
 
 #[derive(Deserialize)]
 struct RateResponseData {

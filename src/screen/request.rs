@@ -1,7 +1,6 @@
 use super::{RequestScreen, Screen};
 use crate::currency::{currency_input, Currency};
-use crate::full_width_button;
-
+use crate::{full_width_button, new_invoice};
 use concoct::composable::state::State;
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{state, Container};
@@ -17,6 +16,7 @@ pub fn request_screen(
 ) {
     Container::build_column(move || {
         let amount = state(|| None::<String>);
+        let invoice = state(|| new_invoice(amount.get().cloned().map(|s| s.parse().unwrap())));
 
         match request {
             RequestScreen::Share => {
@@ -27,7 +27,7 @@ pub fn request_screen(
                     || Text::new("Back"),
                 );
 
-                Text::new("12345");
+                Text::new(invoice.get().as_ref().to_string());
 
                 let label = if let Some(amount) = amount.get().cloned() {
                     amount
@@ -45,7 +45,7 @@ pub fn request_screen(
                     with_current_env(|env| {
                         Intent::new(env, Action::Send)
                             .with_type("text/plain")
-                            .with_extra(Extra::Text, "Hello World!")
+                            .with_extra(Extra::Text, invoice.get().as_ref().to_string())
                             .into_chooser()
                             .start_activity()
                             .unwrap()
