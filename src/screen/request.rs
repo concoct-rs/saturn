@@ -1,7 +1,7 @@
 use super::{RequestScreen, Screen};
 use crate::btc::MyWallet;
 use crate::currency::{currency_input, Currency};
-use crate::{full_width_button, new_invoice};
+use crate::full_width_button;
 use concoct::composable::state::State;
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{state, Container};
@@ -14,7 +14,7 @@ pub fn request_screen(
     display: State<Screen>,
     currency: State<Currency>,
     rate: Decimal,
-    wallet: State<MyWallet>
+    wallet: State<MyWallet>,
 ) {
     Container::build_column(move || {
         let amount = state(|| None::<String>);

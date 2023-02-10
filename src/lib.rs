@@ -1,4 +1,4 @@
-use bitcoin_hashes::{sha256, Hash};
+use bitcoin_hashes::Hash;
 use btc::MyWallet;
 use concoct::composable::container::Padding;
 use concoct::composable::material::{NavigationBar, NavigationBarItem};
@@ -6,11 +6,9 @@ use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container};
 use concoct::DevicePixels;
 use futures::{Stream, StreamExt};
-use lightning::ln::PaymentSecret;
-use lightning_invoice::{Invoice, InvoiceBuilder};
-use rust_decimal::prelude::ToPrimitive;
+
 use rust_decimal::Decimal;
-use secp256k1::{Secp256k1, SecretKey};
+
 use serde::Deserialize;
 use std::time::Duration;
 use taffy::prelude::Size;
@@ -33,36 +31,44 @@ mod currency;
 use currency::Currency;
 
 mod screen;
-use screen::{balance_screen, request_screen, send_screen, RequestScreen, Screen};
+use screen::{balance_screen, history_screen, request_screen, send_screen, RequestScreen, Screen};
 
-fn new_invoice(amount: Option<Decimal>) -> Invoice {
-    let private_key = SecretKey::from_slice(
-        &[
-            0xe1, 0x26, 0xf6, 0x8f, 0x7e, 0xaf, 0xcc, 0x8b, 0x74, 0xf5, 0x4d, 0x26, 0x9f, 0xe2,
-            0x06, 0xbe, 0x71, 0x50, 0x00, 0xf9, 0x4d, 0xac, 0x06, 0x7d, 0x1c, 0x04, 0xa8, 0xca,
-            0x3b, 0x2d, 0xb7, 0x34,
-        ][..],
-    )
-    .unwrap();
+const PRIVATE_KEY: &'static str = "Kzh4KzaKATrfKj6hsMQaWEnza4bAn9WM11JZcqpKR4WymJpPHivU";
 
-    let payment_hash = sha256::Hash::from_slice(&[0; 32][..]).unwrap();
-    let payment_secret = PaymentSecret([42u8; 32]);
+#[derive(Deserialize, Debug)]
+struct Response {
+    address: String,
+    n_tx: u64,
+    total_received: u64,
+    total_sent: u64,
+    final_balance: u64,
+    txs: Vec<Transaction>,
+}
 
-    let mut builder = InvoiceBuilder::new(lightning_invoice::Currency::Bitcoin)
-        .description("Coins pls!".into())
-        .payment_hash(payment_hash)
-        .payment_secret(payment_secret)
-        .current_timestamp()
-        .min_final_cltv_expiry(144);
+#[derive(Clone, Deserialize, Debug)]
+struct Transaction {
+    hash: String,
+    time: u64,
+    result: i64,
+}
 
-    if let Some(btc) = amount {
-        let millisatoshis = (btc * Decimal::new(10i64.pow(11), 0)).to_u64().unwrap();
-        builder = builder.amount_milli_satoshis(millisatoshis);
-    }
+#[derive(Deserialize, Debug)]
+struct Input {
+    prev_out: PrevOut,
+}
 
-    builder
-        .build_signed(|hash| Secp256k1::new().sign_ecdsa_recoverable(hash, &private_key))
-        .unwrap()
+#[derive(Deserialize, Debug)]
+struct PrevOut {
+    value: u64,
+    n: u64,
+    addr: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct Output {
+    value: u64,
+    n: u64,
+    addr: String,
 }
 
 #[derive(Deserialize)]
@@ -78,7 +84,7 @@ struct RateResponse {
 
 async fn make_stream() -> impl Stream<Item = Decimal> {
     Box::pin(
-        IntervalStream::new(interval(Duration::from_secs(5))).then(|_| async {
+        IntervalStream::new(interval(Duration::from_secs(60))).then(|_| async {
             let res: RateResponse = reqwest::get("http://api.coincap.io/v2/rates/bitcoin")
                 .await
                 .unwrap()
@@ -105,16 +111,22 @@ pub fn app() {
 
         let wallet = state(MyWallet::new);
 
-        let current_rate = rate.get().cloned();
-        match display.get().cloned() {
-            Screen::Balance => {
-                balance_screen(display, currency, current_rate, &*wallet.get().as_ref())
+        Container::build_column(move || {
+            let current_rate = rate.get().cloned();
+            match display.get().cloned() {
+                Screen::Balance => {
+                    balance_screen(display, currency, current_rate, &*wallet.get().as_ref())
+                }
+                Screen::Send => send_screen(display, currency, current_rate),
+                Screen::Request(request) => {
+                    request_screen(request, display, currency, current_rate, wallet)
+                }
+                Screen::History => history_screen(wallet),
             }
-            Screen::Send => send_screen(display, currency, current_rate),
-            Screen::Request(request) => {
-                request_screen(request, display, currency, current_rate, wallet)
-            }
-        }
+        })
+        .flex_grow(1.)
+        .padding(Padding::default().horizontal(Dimension::Points(12.dp())))
+        .view();
 
         NavigationBar::new(move || {
             NavigationBarItem::build(
@@ -141,7 +153,7 @@ pub fn app() {
             NavigationBarItem::build(
                 || Text::new("H"),
                 || Text::new("History"),
-                move || *display.get().as_mut() = Screen::Balance,
+                move || *display.get().as_mut() = Screen::History,
             )
             .view();
         })
@@ -149,7 +161,7 @@ pub fn app() {
     .align_items(AlignItems::Stretch)
     .justify_content(JustifyContent::SpaceEvenly)
     .flex_grow(1.)
-    .padding(Padding::default().top(Dimension::Points(40.dp())))
+    .padding(Padding::default().top(Dimension::Points(60.dp())))
     .view()
 }
 

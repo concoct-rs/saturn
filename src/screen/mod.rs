@@ -1,6 +1,9 @@
 mod balance;
 pub use balance::balance_screen;
 
+mod history;
+pub use history::history_screen;
+
 mod send;
 pub use send::send_screen;
 
@@ -18,4 +21,5 @@ pub enum Screen {
     Balance,
     Send,
     Request(RequestScreen),
+    History,
 }

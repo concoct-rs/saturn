@@ -1,41 +1,16 @@
-use std::str::FromStr;
-
+use crate::PRIVATE_KEY;
 use bdk::bitcoin::util::bip32::ExtendedPrivKey;
 use bdk::bitcoin::Network;
-use bdk::blockchain::{Blockchain, ElectrumBlockchain};
-use bdk::database::{BatchDatabase, MemoryDatabase};
-use bdk::template::Bip84;
-use bdk::wallet::export::FullyNodedExport;
-use bdk::{Balance, KeychainKind, SignOptions, SyncOptions, Wallet};
-
+use bdk::blockchain::ElectrumBlockchain;
+use bdk::database::MemoryDatabase;
 use bdk::electrum_client::Client;
+use bdk::template::Bip84;
+
 use bdk::wallet::AddressIndex;
-use bitcoin::util::bip32;
+use bdk::{Balance, KeychainKind, SyncOptions, TransactionDetails, Wallet};
 
-use bitcoin::{Address, Transaction, OutPoint, TxOut};
-
-pub fn build_signed_tx<D: BatchDatabase>(
-    wallet: &Wallet<D>,
-    recipient_address: &str,
-    amount: u64,
-) -> Transaction {
-    // Create a transaction builder
-    let mut tx_builder = wallet.build_tx();
-
-    let to_address = Address::from_str(recipient_address).unwrap();
-
-    // Set recipient of the transaction
-    tx_builder.set_recipients(vec![(to_address.script_pubkey(), amount)]);
-
-    // Finalise the transaction and extract PSBT
-    let (mut psbt, _) = tx_builder.finish().unwrap();
-
-    // Sign the above psbt with signing option
-    wallet.sign(&mut psbt, SignOptions::default()).unwrap();
-
-    // Extract the final transaction
-    psbt.extract_tx()
-}
+use bitcoin::{Address, PrivateKey};
+use std::str::FromStr;
 
 pub struct MyWallet {
     blockchain: ElectrumBlockchain,
@@ -44,10 +19,10 @@ pub struct MyWallet {
 
 impl MyWallet {
     pub fn new() -> Self {
-        let xpriv = "tprv8ZgxMBicQKsPcx5nBGsR63Pe8KnRUqmbJNENAfGftF3yuXoMMoVJJcYeUw5eVkm9WBPjWYt6HMWYJNesB5HaNVBaFc1M6dRjWSYnmewUMYy";
-        let xpriv = bip32::ExtendedPrivKey::from_str(xpriv).unwrap();
+        let private_key = PrivateKey::from_str(PRIVATE_KEY).unwrap();
+        let xpriv = ExtendedPrivKey::new_master(Network::Bitcoin, &private_key.to_bytes()).unwrap();
 
-        let network = Network::Testnet;
+        let network = Network::Bitcoin;
         let electrum_url = "ssl://electrum.blockstream.info:60002";
         let blockchain = ElectrumBlockchain::from(Client::new(electrum_url).unwrap());
 
@@ -72,5 +47,9 @@ impl MyWallet {
 
     pub fn get_address(&self) -> Address {
         self.wallet.get_address(AddressIndex::New).unwrap().address
+    }
+
+    pub fn get_transactions(&self) -> Vec<TransactionDetails> {
+        self.wallet.list_transactions(false).unwrap()
     }
 }
