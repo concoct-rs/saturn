@@ -2,19 +2,17 @@ use crate::PRIVATE_KEY;
 use bdk::bitcoin::util::bip32::ExtendedPrivKey;
 use bdk::bitcoin::Network;
 use bdk::blockchain::ElectrumBlockchain;
-use bdk::database::MemoryDatabase;
 use bdk::electrum_client::Client;
+use bdk::sled::Tree;
 use bdk::template::Bip84;
-
 use bdk::wallet::AddressIndex;
 use bdk::{Balance, KeychainKind, SyncOptions, TransactionDetails, Wallet};
-
 use bitcoin::{Address, PrivateKey};
 use std::str::FromStr;
 
 pub struct MyWallet {
     blockchain: ElectrumBlockchain,
-    wallet: Wallet<MemoryDatabase>,
+    wallet: Wallet<Tree>,
 }
 
 impl MyWallet {
@@ -26,11 +24,16 @@ impl MyWallet {
         let electrum_url = "ssl://electrum.blockstream.info:60002";
         let blockchain = ElectrumBlockchain::from(Client::new(electrum_url).unwrap());
 
+        let mut path = std::env::current_dir().unwrap();
+        path.push("db");
+        dbg!(&path);
+
+        let db = sled::open(path).unwrap();
         let wallet = Wallet::new(
             Bip84(xpriv, KeychainKind::External),
             Some(Bip84(xpriv, KeychainKind::Internal)),
             network,
-            MemoryDatabase::default(),
+            db.open_tree("wallet").unwrap(),
         )
         .unwrap();
 
