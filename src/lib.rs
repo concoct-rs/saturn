@@ -1,10 +1,11 @@
 use bitcoin_hashes::{sha256, Hash};
+use btc::MyWallet;
 use concoct::composable::container::Padding;
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container};
 use concoct::DevicePixels;
 use futures::{Stream, StreamExt};
-use lightning::ln::{PaymentHash, PaymentSecret};
+use lightning::ln::PaymentSecret;
 use lightning_invoice::{Invoice, InvoiceBuilder};
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -24,6 +25,8 @@ fn android_main(android_app: android_activity::AndroidApp) {
 
     concoct::render::run(app, android_app);
 }
+
+mod btc;
 
 mod currency;
 use currency::Currency;
@@ -99,11 +102,17 @@ pub fn app() {
             })
         });
 
+        let wallet = state(MyWallet::new);
+
         let current_rate = rate.get().cloned();
         match display.get().cloned() {
-            Screen::Balance => balance_screen(display, currency, current_rate),
+            Screen::Balance => {
+                balance_screen(display, currency, current_rate, &*wallet.get().as_ref())
+            }
             Screen::Send => send_screen(display, currency, current_rate),
-            Screen::Request(request) => request_screen(request, display, currency, current_rate),
+            Screen::Request(request) => {
+                request_screen(request, display, currency, current_rate, wallet)
+            }
         }
     })
     .align_items(AlignItems::Stretch)

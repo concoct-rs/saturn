@@ -1,4 +1,5 @@
 use super::{RequestScreen, Screen};
+use crate::btc::MyWallet;
 use crate::currency::{currency_input, Currency};
 use crate::{full_width_button, new_invoice};
 use concoct::composable::state::State;
@@ -13,10 +14,11 @@ pub fn request_screen(
     display: State<Screen>,
     currency: State<Currency>,
     rate: Decimal,
+    wallet: State<MyWallet>
 ) {
     Container::build_column(move || {
         let amount = state(|| None::<String>);
-        let invoice = state(|| new_invoice(amount.get().cloned().map(|s| s.parse().unwrap())));
+        let address = state(move || wallet.get().as_ref().get_address());
 
         match request {
             RequestScreen::Share => {
@@ -27,7 +29,7 @@ pub fn request_screen(
                     || Text::new("Back"),
                 );
 
-                Text::new(invoice.get().as_ref().to_string());
+                Text::new(address.get().as_ref().to_string());
 
                 let label = if let Some(amount) = amount.get().cloned() {
                     amount
@@ -45,7 +47,7 @@ pub fn request_screen(
                     with_current_env(|env| {
                         Intent::new(env, Action::Send)
                             .with_type("text/plain")
-                            .with_extra(Extra::Text, invoice.get().as_ref().to_string())
+                            .with_extra(Extra::Text, address.get().as_ref().to_string())
                             .into_chooser()
                             .start_activity()
                             .unwrap()

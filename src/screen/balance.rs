@@ -1,7 +1,7 @@
 use super::{RequestScreen, Screen};
 use crate::{
     currency::{currency_text, Currency},
-    full_width_button,
+    full_width_button, btc::MyWallet,
 };
 use concoct::composable::{
     container::Gap,
@@ -11,8 +11,8 @@ use concoct::composable::{
 use rust_decimal::Decimal;
 use taffy::style::{Dimension, FlexDirection};
 
-pub fn balance_screen(display: State<Screen>, currency: State<Currency>, rate: Decimal) {
-    let balance = state(|| String::from("100"));
+pub fn balance_screen(display: State<Screen>, currency: State<Currency>, rate: Decimal, wallet: &MyWallet) {
+    let balance = state(||wallet.get_balance().to_string());
 
     currency_text(currency, balance, rate);
 
