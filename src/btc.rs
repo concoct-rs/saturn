@@ -12,7 +12,7 @@ use bdk::electrum_client::Client;
 use bdk::wallet::AddressIndex;
 use bitcoin::util::bip32;
 
-use bitcoin::{Address, Transaction};
+use bitcoin::{Address, Transaction, OutPoint, TxOut};
 
 pub fn build_signed_tx<D: BatchDatabase>(
     wallet: &Wallet<D>,

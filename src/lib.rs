@@ -1,6 +1,7 @@
 use bitcoin_hashes::{sha256, Hash};
 use btc::MyWallet;
 use concoct::composable::container::Padding;
+use concoct::composable::material::{NavigationBar, NavigationBarItem};
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container};
 use concoct::DevicePixels;
@@ -32,7 +33,7 @@ mod currency;
 use currency::Currency;
 
 mod screen;
-use screen::{balance_screen, request_screen, send_screen, Screen};
+use screen::{balance_screen, request_screen, send_screen, RequestScreen, Screen};
 
 fn new_invoice(amount: Option<Decimal>) -> Invoice {
     let private_key = SecretKey::from_slice(
@@ -114,11 +115,41 @@ pub fn app() {
                 request_screen(request, display, currency, current_rate, wallet)
             }
         }
+
+        NavigationBar::new(move || {
+            NavigationBarItem::build(
+                || Text::new("W"),
+                || Text::new("Wallet"),
+                move || *display.get().as_mut() = Screen::Balance,
+            )
+            .view();
+
+            NavigationBarItem::build(
+                || Text::new("S"),
+                || Text::new("Send"),
+                move || *display.get().as_mut() = Screen::Send,
+            )
+            .view();
+
+            NavigationBarItem::build(
+                || Text::new("R"),
+                || Text::new("Request"),
+                move || *display.get().as_mut() = Screen::Request(RequestScreen::Share),
+            )
+            .view();
+
+            NavigationBarItem::build(
+                || Text::new("H"),
+                || Text::new("History"),
+                move || *display.get().as_mut() = Screen::Balance,
+            )
+            .view();
+        })
     })
     .align_items(AlignItems::Stretch)
     .justify_content(JustifyContent::SpaceEvenly)
     .flex_grow(1.)
-    .padding(Padding::from(Dimension::Points(16.dp())).top(Dimension::Points(40.dp())))
+    .padding(Padding::default().top(Dimension::Points(40.dp())))
     .view()
 }
 
