@@ -9,11 +9,11 @@ use concoct::modify::ModifyExt;
 use concoct::{DevicePixels, Modifier};
 
 use image::png::PngEncoder;
-use image::{EncodableLayout, Luma, Rgb};
+use image::Rgb;
 use qrcode::QrCode;
 use rust_decimal::Decimal;
 use skia_safe::{Data, Image};
-use taffy::prelude::{Rect, Size};
+use taffy::prelude::Size;
 use taffy::style::{AlignItems, JustifyContent};
 
 #[track_caller]

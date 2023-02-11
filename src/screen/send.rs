@@ -3,13 +3,10 @@ use crate::{
     currency::{currency_input, Currency},
     full_width_button,
 };
-use concoct::{
-    composable::{
-        material::Button,
-        state::{state, State},
-        Container, Text,
-    },
-    Modifier,
+use concoct::composable::{
+    material::Button,
+    state::{state, State},
+    Container, Text,
 };
 use rust_decimal::Decimal;
 use taffy::style::{AlignItems, FlexDirection};
