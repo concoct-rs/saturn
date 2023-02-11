@@ -1,7 +1,7 @@
 use bitcoin_hashes::Hash;
 use btc::MyWallet;
 use concoct::composable::container::Padding;
-use concoct::composable::material::{NavigationBar, NavigationBarItem};
+use concoct::composable::material::{text, NavigationBar, NavigationBarItem};
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container, Icon};
 use concoct::DevicePixels;
@@ -138,9 +138,10 @@ pub fn app() {
                     )
                     .view()
                 },
-                || Text::new("Wallet"),
+                || text("Wallet"),
                 move || *display.get().as_mut() = Screen::Balance,
             )
+            .is_selected(display.get().cloned() == Screen::Balance)
             .view();
 
             NavigationBarItem::build(
@@ -151,9 +152,10 @@ pub fn app() {
                     )
                     .view()
                 },
-                || Text::new("Send"),
+                || text("Send"),
                 move || *display.get().as_mut() = Screen::Send,
             )
+            .is_selected(display.get().cloned() == Screen::Send)
             .view();
 
             NavigationBarItem::build(
@@ -164,9 +166,14 @@ pub fn app() {
                     )
                     .view()
                 },
-                || Text::new("Request"),
+                || text("Request"),
                 move || *display.get().as_mut() = Screen::Request(RequestScreen::Share),
             )
+            .is_selected(if let Screen::Request(_) = display.get().cloned() {
+                true
+            } else {
+                false
+            })
             .view();
 
             NavigationBarItem::build(
@@ -177,9 +184,10 @@ pub fn app() {
                     )
                     .view()
                 },
-                || Text::new("History"),
+                || text("History"),
                 move || *display.get().as_mut() = Screen::History,
             )
+            .is_selected(display.get().cloned() == Screen::History)
             .view();
         })
     })

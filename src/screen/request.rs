@@ -5,7 +5,15 @@ use crate::full_width_button;
 use concoct::composable::state::State;
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{state, Container};
+use concoct::modify::ModifyExt;
+use concoct::{DevicePixels, Modifier};
+
+use image::png::PngEncoder;
+use image::{EncodableLayout, Luma, Rgb};
+use qrcode::QrCode;
 use rust_decimal::Decimal;
+use skia_safe::{Data, Image};
+use taffy::prelude::{Rect, Size};
 use taffy::style::{AlignItems, JustifyContent};
 
 #[track_caller]
@@ -38,10 +46,39 @@ pub fn request_screen(
                     *display.get().as_mut() = Screen::Request(RequestScreen::Amount);
                 });
 
-                Text::new(address.get().as_ref().to_string());
+                Container::build_column(move || {
+                    let qr_uri = address.get().as_ref().to_qr_uri();
+                    Container::build_row(|| {})
+                        .size(Size::from_points(200.dp(), 200.dp()))
+                        .modifier(Modifier.draw(move |layout, canvas| {
+                            let qr_code = QrCode::new(&qr_uri).unwrap();
+                            let image_buffer = qr_code
+                                .render::<Rgb<u8>>()
+                                .min_dimensions(layout.size.width as _, layout.size.height as _)
+                                .build();
+
+                            let mut png_data = Vec::new();
+                            PngEncoder::new(&mut png_data)
+                                .encode(
+                                    &image_buffer,
+                                    image_buffer.width(),
+                                    image_buffer.height(),
+                                    image::ColorType::Rgb8,
+                                )
+                                .unwrap();
+
+                            let image = Image::from_encoded(Data::new_copy(&png_data)).unwrap();
+
+                            canvas.draw_image(image, (layout.location.x, layout.location.y), None);
+                        }))
+                        .view();
+                })
+                .flex_grow(1.)
+                .align_items(AlignItems::Center)
+                .view();
 
                 #[cfg(target_os = "android")]
-                full_width_button("Share", move || {
+                full_width_button(address.get().as_ref().to_string(), move || {
                     use android_intent::{with_current_env, Action, Extra, Intent};
 
                     with_current_env(|env| {
@@ -55,7 +92,7 @@ pub fn request_screen(
                 });
 
                 #[cfg(not(target_os = "android"))]
-                full_width_button("Copy", || {});
+                full_width_button(address.get().as_ref().to_string(), || {});
             }
             RequestScreen::Amount => {
                 let new_amount = state(|| String::from("0"));

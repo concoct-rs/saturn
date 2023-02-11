@@ -12,8 +12,10 @@ bitcoin_hashes = "0.11.0"
 # concoct = { git = "https://github.com/concoct-rs/concoct" }
 concoct = { path = "../concoct" }
 futures = "0.3.26"
+image = "0.23"
 lightning = "0.0.113"
 lightning-invoice = "0.21.0"
+qrcode = "0.12.0"
 rust_decimal = "1.28.0"
 secp256k1 = { version = "0.24.0", features = ["recovery"] }
 serde = { version = "1.0.152", features = ["derive"] }

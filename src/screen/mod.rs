@@ -10,13 +10,13 @@ pub use send::send_screen;
 mod request;
 pub use request::request_screen;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RequestScreen {
     Share,
     Amount,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
     Balance,
     Send,
