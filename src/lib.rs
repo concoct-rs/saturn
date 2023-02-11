@@ -3,13 +3,14 @@ use btc::MyWallet;
 use concoct::composable::container::Padding;
 use concoct::composable::material::{NavigationBar, NavigationBarItem};
 use concoct::composable::{material::Button, Text};
-use concoct::composable::{remember, state, stream, Container};
+use concoct::composable::{remember, state, stream, Container, Icon};
 use concoct::DevicePixels;
 use futures::{Stream, StreamExt};
 
 use rust_decimal::Decimal;
 
 use serde::Deserialize;
+use skia_safe::{Color4f, Paint, RGB};
 use std::time::Duration;
 use taffy::prelude::Size;
 use taffy::style::{AlignItems, Dimension, JustifyContent};
@@ -130,28 +131,52 @@ pub fn app() {
 
         NavigationBar::new(move || {
             NavigationBarItem::build(
-                || Text::new("W"),
+                || {
+                    Icon::build(
+                        include_str!("../assets/wallet.svg"),
+                        Paint::new(Color4f::from(RGB::from((0, 0, 0))), None),
+                    )
+                    .view()
+                },
                 || Text::new("Wallet"),
                 move || *display.get().as_mut() = Screen::Balance,
             )
             .view();
 
             NavigationBarItem::build(
-                || Text::new("S"),
+                || {
+                    Icon::build(
+                        include_str!("../assets/outbox.svg"),
+                        Paint::new(Color4f::from(RGB::from((0, 0, 0))), None),
+                    )
+                    .view()
+                },
                 || Text::new("Send"),
                 move || *display.get().as_mut() = Screen::Send,
             )
             .view();
 
             NavigationBarItem::build(
-                || Text::new("R"),
+                || {
+                    Icon::build(
+                        include_str!("../assets/inbox.svg"),
+                        Paint::new(Color4f::from(RGB::from((0, 0, 0))), None),
+                    )
+                    .view()
+                },
                 || Text::new("Request"),
                 move || *display.get().as_mut() = Screen::Request(RequestScreen::Share),
             )
             .view();
 
             NavigationBarItem::build(
-                || Text::new("H"),
+                || {
+                    Icon::build(
+                        include_str!("../assets/history.svg"),
+                        Paint::new(Color4f::from(RGB::from((0, 0, 0))), None),
+                    )
+                    .view()
+                },
                 || Text::new("History"),
                 move || *display.get().as_mut() = Screen::History,
             )

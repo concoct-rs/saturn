@@ -29,8 +29,6 @@ pub fn request_screen(
                     || Text::new("Back"),
                 );
 
-                Text::new(address.get().as_ref().to_string());
-
                 let label = if let Some(amount) = amount.get().cloned() {
                     amount
                 } else {
@@ -39,6 +37,8 @@ pub fn request_screen(
                 full_width_button(label, move || {
                     *display.get().as_mut() = Screen::Request(RequestScreen::Amount);
                 });
+
+                Text::new(address.get().as_ref().to_string());
 
                 #[cfg(target_os = "android")]
                 full_width_button("Share", move || {

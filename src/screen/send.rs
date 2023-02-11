@@ -5,10 +5,7 @@ use crate::{
 };
 use concoct::{
     composable::{
-        material::{
-            icon::{icon, Icon},
-            Button,
-        },
+        material::Button,
         state::{state, State},
         Container, Text,
     },
@@ -28,7 +25,7 @@ pub fn send_screen(display: State<Screen>, currency: State<Currency>, rate: Deci
                 move || {
                     *display.get().as_mut() = Screen::Balance;
                 },
-                || icon(Modifier, Icon::ArrowBack, "Back"),
+                || {},
             );
 
             Text::new(address.clone());
