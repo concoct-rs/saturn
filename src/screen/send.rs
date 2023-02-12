@@ -3,10 +3,13 @@ use crate::{
     currency::{currency_input, Currency},
     full_width_button,
 };
-use concoct::composable::{
-    material::Button,
-    state::{state, State},
-    Container, Text,
+use concoct::{
+    composable::{
+        material::Button,
+        state::{state, State},
+        Container, Text,
+    },
+    View,
 };
 use rust_decimal::Decimal;
 use taffy::style::{AlignItems, FlexDirection};
@@ -18,12 +21,11 @@ pub fn send_screen(display: State<Screen>, currency: State<Currency>, rate: Deci
         let amount = state(|| String::from("0"));
 
         Container::build_column(move || {
-            Button::new(
-                move || {
+            Button::new(|| {})
+                .on_press(move || {
                     *display.get().as_mut() = Screen::Balance;
-                },
-                || {},
-            );
+                })
+                .view();
 
             Text::new(address.clone());
 

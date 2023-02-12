@@ -1,7 +1,8 @@
 use concoct::{
     composable::{material::Button, state::State, Container, Text},
+    dimension::{DevicePixels, Size},
     modify::{handler::keyboard_input::KeyboardHandler, HandlerModifier},
-    DevicePixels, Modifier,
+    Modifier, View,
 };
 use rust_decimal::Decimal;
 use std::{
@@ -9,7 +10,7 @@ use std::{
     ops::Not,
 };
 use taffy::{
-    prelude::{Rect, Size},
+    prelude::Rect,
     style::{AlignItems, Dimension, FlexDirection, JustifyContent},
 };
 use winit::event::{ElementState, VirtualKeyCode};
@@ -71,33 +72,33 @@ pub fn currency_text(currency: State<Currency>, value: State<String>, rate: Deci
         .justify_content(JustifyContent::Center)
         .flex_direction(FlexDirection::Column)
         .margin(Rect::from_points(20., 20., 50., 50.))
-        .size(Size {
-            width: Dimension::Percent(1.),
-            height: Dimension::Points(200.dp()),
-        })
+        .size(
+            Size::default()
+                .width(Dimension::Percent(1.))
+                .height(Dimension::Points(200.dp())),
+        )
         .view();
 
-        Button::new(
-            move || {
-                let converted = currency
+        Button::new(move || {
+            Text::new(format!(
+                "{}{}",
+                !currency.get().cloned(),
+                currency
                     .get()
                     .cloned()
                     .convert(&*value.get().as_ref(), rate)
-                    .to_string();
-                *value.get().as_mut() = converted;
-                *currency.get().as_mut() = !currency.get().cloned();
-            },
-            move || {
-                Text::new(format!(
-                    "{}{}",
-                    !currency.get().cloned(),
-                    currency
-                        .get()
-                        .cloned()
-                        .convert(&*value.get().as_ref(), rate)
-                ))
-            },
-        );
+            ))
+        })
+        .on_press(move || {
+            let converted = currency
+                .get()
+                .cloned()
+                .convert(&*value.get().as_ref(), rate)
+                .to_string();
+            *value.get().as_mut() = converted;
+            *currency.get().as_mut() = !currency.get().cloned();
+        })
+        .view();
     })
     .align_items(AlignItems::Center)
     .justify_content(JustifyContent::Center)

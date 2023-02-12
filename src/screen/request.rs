@@ -5,16 +5,15 @@ use crate::full_width_button;
 use concoct::composable::state::State;
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{state, Container};
+use concoct::dimension::{DevicePixels, Size};
 use concoct::modify::ModifyExt;
-use concoct::{DevicePixels, Modifier};
-
+use concoct::{Modifier, View};
 use image::png::PngEncoder;
 use image::Rgb;
 use qrcode::QrCode;
 use rust_decimal::Decimal;
 use skia_safe::{Data, Image};
-use taffy::prelude::Size;
-use taffy::style::{AlignItems, JustifyContent};
+use taffy::style::{AlignItems, Dimension, JustifyContent};
 
 #[track_caller]
 pub fn request_screen(
@@ -30,12 +29,11 @@ pub fn request_screen(
 
         match request {
             RequestScreen::Share => {
-                Button::new(
-                    move || {
+                Button::new(|| Text::new("Back"))
+                    .on_press(move || {
                         *display.get().as_mut() = Screen::Balance;
-                    },
-                    || Text::new("Back"),
-                );
+                    })
+                    .view();
 
                 let label = if let Some(amount) = amount.get().cloned() {
                     amount
@@ -49,7 +47,7 @@ pub fn request_screen(
                 Container::build_column(move || {
                     let qr_uri = address.get().as_ref().to_qr_uri();
                     Container::build_row(|| {})
-                        .size(Size::from_points(200.dp(), 200.dp()))
+                        .size(Size::from(Dimension::Points(200.dp())))
                         .modifier(Modifier.draw(move |layout, canvas| {
                             let qr_code = QrCode::new(&qr_uri).unwrap();
                             let image_buffer = qr_code
@@ -97,12 +95,11 @@ pub fn request_screen(
             RequestScreen::Amount => {
                 let new_amount = state(|| String::from("0"));
 
-                Button::new(
-                    move || {
+                Button::new(|| Text::new("Back"))
+                    .on_press(move || {
                         *display.get().as_mut() = Screen::Request(RequestScreen::Share);
-                    },
-                    || Text::new("Back"),
-                );
+                    })
+                    .view();
 
                 currency_input(new_amount, currency, rate);
 
