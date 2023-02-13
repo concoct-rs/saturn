@@ -9,13 +9,16 @@ use bdk::{Balance, KeychainKind};
 use bitcoin::{Address, PrivateKey};
 use std::str::FromStr;
 use std::sync::mpsc;
+use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::task;
+use tokio::time::interval;
 
 enum Message {
     Address { tx: oneshot::Sender<Address> },
     Balance { tx: oneshot::Sender<Balance> },
     Transactions { tx: oneshot::Sender<Vec<i64>> },
+    Sync,
 }
 
 #[derive(Clone)]
@@ -27,6 +30,19 @@ impl Wallet {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
 
+        let task_tx = tx.clone();
+        task::spawn(async move {
+            let mut interval = interval(Duration::from_secs(60));
+
+            loop {
+                task::block_in_place(|| {
+                    task_tx.send(Message::Sync).unwrap();
+                });
+
+                interval.tick().await;
+            }
+        });
+
         task::spawn_blocking(move || {
             let private_key = PrivateKey::from_str(PRIVATE_KEY).unwrap();
             let xpriv =
@@ -34,7 +50,7 @@ impl Wallet {
 
             let network = Network::Bitcoin;
             let electrum_url = "ssl://electrum.blockstream.info:60002";
-            let _blockchain = ElectrumBlockchain::from(Client::new(electrum_url).unwrap());
+            let blockchain = ElectrumBlockchain::from(Client::new(electrum_url).unwrap());
 
             let mut path = std::env::current_dir().unwrap();
             path.push("db");
@@ -68,6 +84,9 @@ impl Wallet {
                             })
                             .collect();
                         tx.send(transactions).unwrap();
+                    }
+                    Message::Sync => {
+                        wallet.sync(&blockchain, Default::default()).unwrap();
                     }
                 }
             }

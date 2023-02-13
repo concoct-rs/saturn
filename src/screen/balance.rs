@@ -1,6 +1,6 @@
 use crate::{
-    btc::Wallet,
     currency::{currency_text, Currency},
+    wallet::Wallet,
 };
 use concoct::composable::{
     remember,

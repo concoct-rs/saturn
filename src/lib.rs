@@ -21,8 +21,8 @@ fn android_main(android_app: android_activity::AndroidApp) {
     concoct::render::run(app, android_app);
 }
 
-mod btc;
-use btc::Wallet;
+mod wallet;
+use wallet::Wallet;
 
 mod currency;
 use currency::Currency;

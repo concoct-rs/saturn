@@ -1,4 +1,4 @@
-use crate::btc::Wallet;
+use crate::wallet::Wallet;
 use concoct::composable::{key, remember, state::state, stream, Container, Text};
 use futures::stream;
 

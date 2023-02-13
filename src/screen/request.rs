@@ -1,7 +1,7 @@
 use super::{RequestScreen, Screen};
-use crate::btc::Wallet;
 use crate::currency::{currency_input, Currency};
 use crate::full_width_button;
+use crate::wallet::Wallet;
 use concoct::composable::state::State;
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container};
@@ -14,7 +14,6 @@ use image::Rgb;
 use qrcode::QrCode;
 use rust_decimal::Decimal;
 use skia_safe::{Data, Image};
-
 use taffy::style::{AlignItems, Dimension, JustifyContent};
 
 #[track_caller]
