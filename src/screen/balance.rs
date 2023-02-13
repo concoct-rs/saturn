@@ -1,7 +1,5 @@
-use std::sync::mpsc;
-
 use crate::{
-    btc::Message,
+    btc::Wallet,
     currency::{currency_text, Currency},
 };
 use concoct::composable::{
@@ -11,9 +9,8 @@ use concoct::composable::{
 };
 use futures::stream;
 use rust_decimal::Decimal;
-use tokio::sync::oneshot;
 
-pub fn balance_screen(currency: State<Currency>, rate: Decimal, wallet: mpsc::Sender<Message>) {
+pub fn balance_screen(currency: State<Currency>, rate: Decimal, wallet: Wallet) {
     Container::column(move || {
         let balance = state(|| None);
 
@@ -21,14 +18,7 @@ pub fn balance_screen(currency: State<Currency>, rate: Decimal, wallet: mpsc::Se
         remember([], move || {
             let wallet = wallet.clone();
             stream(
-                Box::pin(async move {
-                    stream::once(Box::pin(async move {
-                        let (tx, rx) = oneshot::channel();
-                        wallet.send(Message::Balance { tx }).unwrap();
-
-                        rx.await.unwrap()
-                    }))
-                }),
+                Box::pin(async move { stream::once(Box::pin(wallet.balance())) }),
                 move |bal| {
                     *balance.get().as_mut() = Some(bal);
                 },

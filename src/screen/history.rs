@@ -1,12 +1,9 @@
-use std::sync::mpsc::Sender;
-
-use crate::btc::Message;
+use crate::btc::Wallet;
 use concoct::composable::{key, remember, state::state, stream, Container, Text};
 use futures::stream;
-use tokio::sync::oneshot;
 
 #[track_caller]
-pub fn history_screen(wallet: Sender<Message>) {
+pub fn history_screen(wallet: Wallet) {
     Container::column(move || {
         let transactions = state(|| None);
 
@@ -14,14 +11,7 @@ pub fn history_screen(wallet: Sender<Message>) {
         remember([], move || {
             let wallet = wallet.clone();
             stream(
-                Box::pin(async move {
-                    stream::once(Box::pin(async move {
-                        let (tx, rx) = oneshot::channel();
-                        wallet.send(Message::Transactions { tx }).unwrap();
-
-                        rx.await.unwrap()
-                    }))
-                }),
+                Box::pin(async move { stream::once(Box::pin(wallet.transactions())) }),
                 move |txs| {
                     *transactions.get().as_mut() = Some(txs);
                 },

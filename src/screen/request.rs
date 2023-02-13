@@ -1,5 +1,5 @@
 use super::{RequestScreen, Screen};
-use crate::btc::Message;
+use crate::btc::Wallet;
 use crate::currency::{currency_input, Currency};
 use crate::full_width_button;
 use concoct::composable::state::State;
@@ -14,9 +14,8 @@ use image::Rgb;
 use qrcode::QrCode;
 use rust_decimal::Decimal;
 use skia_safe::{Data, Image};
-use std::sync::mpsc::Sender;
+
 use taffy::style::{AlignItems, Dimension, JustifyContent};
-use tokio::sync::oneshot;
 
 #[track_caller]
 pub fn request_screen(
@@ -24,7 +23,7 @@ pub fn request_screen(
     display: State<Screen>,
     currency: State<Currency>,
     rate: Decimal,
-    wallet: Sender<Message>,
+    wallet: Wallet,
 ) {
     Container::build_column(move || {
         let amount = state(|| None::<String>);
@@ -34,14 +33,7 @@ pub fn request_screen(
         remember([], move || {
             let wallet = wallet.clone();
             stream(
-                Box::pin(async move {
-                    stream::once(Box::pin(async move {
-                        let (tx, rx) = oneshot::channel();
-                        wallet.send(Message::Address { tx }).unwrap();
-
-                        rx.await.unwrap()
-                    }))
-                }),
+                Box::pin(async move { stream::once(Box::pin(wallet.address())) }),
                 move |txs| {
                     *address.get().as_mut() = Some(txs);
                 },

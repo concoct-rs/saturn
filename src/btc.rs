@@ -3,95 +3,97 @@ use bdk::bitcoin::util::bip32::ExtendedPrivKey;
 use bdk::bitcoin::Network;
 use bdk::blockchain::ElectrumBlockchain;
 use bdk::electrum_client::Client;
-use bdk::sled::Tree;
 use bdk::template::Bip84;
 use bdk::wallet::AddressIndex;
-use bdk::{Balance, KeychainKind, SyncOptions, TransactionDetails, Wallet};
+use bdk::{Balance, KeychainKind};
 use bitcoin::{Address, PrivateKey};
 use std::str::FromStr;
 use std::sync::mpsc;
 use tokio::sync::oneshot;
 use tokio::task;
 
-pub enum Message {
+enum Message {
     Address { tx: oneshot::Sender<Address> },
     Balance { tx: oneshot::Sender<Balance> },
     Transactions { tx: oneshot::Sender<Vec<i64>> },
 }
 
-pub fn wallet() -> mpsc::Sender<Message> {
-    let (tx, rx) = mpsc::channel();
-
-    task::spawn_blocking(move || {
-        let wallet = MyWallet::new();
-        while let Ok(msg) = rx.recv() {
-            match msg {
-                Message::Address { tx } => {
-                    let address = wallet.get_address();
-                    tx.send(address).unwrap();
-                }
-                Message::Balance { tx } => {
-                    let balance = wallet.get_balance();
-                    tx.send(balance).unwrap();
-                }
-                Message::Transactions { tx } => {
-                    let transactions = wallet
-                        .get_transactions()
-                        .into_iter()
-                        .map(|transaction| transaction.received as i64 - transaction.sent as i64)
-                        .collect();
-                    tx.send(transactions).unwrap();
-                }
-            }
-        }
-    });
-
-    tx
+#[derive(Clone)]
+pub struct Wallet {
+    tx: mpsc::Sender<Message>,
 }
 
-pub struct MyWallet {
-    blockchain: ElectrumBlockchain,
-    wallet: Wallet<Tree>,
-}
-
-impl MyWallet {
+impl Wallet {
     pub fn new() -> Self {
-        let private_key = PrivateKey::from_str(PRIVATE_KEY).unwrap();
-        let xpriv = ExtendedPrivKey::new_master(Network::Bitcoin, &private_key.to_bytes()).unwrap();
+        let (tx, rx) = mpsc::channel();
 
-        let network = Network::Bitcoin;
-        let electrum_url = "ssl://electrum.blockstream.info:60002";
-        let blockchain = ElectrumBlockchain::from(Client::new(electrum_url).unwrap());
+        task::spawn_blocking(move || {
+            let private_key = PrivateKey::from_str(PRIVATE_KEY).unwrap();
+            let xpriv =
+                ExtendedPrivKey::new_master(Network::Bitcoin, &private_key.to_bytes()).unwrap();
 
-        let mut path = std::env::current_dir().unwrap();
-        path.push("db");
-        dbg!(&path);
+            let network = Network::Bitcoin;
+            let electrum_url = "ssl://electrum.blockstream.info:60002";
+            let _blockchain = ElectrumBlockchain::from(Client::new(electrum_url).unwrap());
 
-        let db = sled::open(path).unwrap();
-        let wallet = Wallet::new(
-            Bip84(xpriv, KeychainKind::External),
-            Some(Bip84(xpriv, KeychainKind::Internal)),
-            network,
-            db.open_tree("wallet").unwrap(),
-        )
-        .unwrap();
+            let mut path = std::env::current_dir().unwrap();
+            path.push("db");
 
-        Self { blockchain, wallet }
-    }
-
-    pub fn get_balance(&self) -> Balance {
-        self.wallet
-            .sync(&self.blockchain, SyncOptions::default())
+            let db = sled::open(path).unwrap();
+            let wallet = bdk::Wallet::new(
+                Bip84(xpriv, KeychainKind::External),
+                Some(Bip84(xpriv, KeychainKind::Internal)),
+                network,
+                db.open_tree("wallet").unwrap(),
+            )
             .unwrap();
 
-        self.wallet.get_balance().unwrap()
+            while let Ok(msg) = rx.recv() {
+                match msg {
+                    Message::Address { tx } => {
+                        let address_info = wallet.get_address(AddressIndex::New).unwrap();
+                        tx.send(address_info.address).unwrap();
+                    }
+                    Message::Balance { tx } => {
+                        let balance = wallet.get_balance().unwrap();
+                        tx.send(balance).unwrap();
+                    }
+                    Message::Transactions { tx } => {
+                        let transactions = wallet
+                            .list_transactions(false)
+                            .unwrap()
+                            .into_iter()
+                            .map(|transaction| {
+                                transaction.received as i64 - transaction.sent as i64
+                            })
+                            .collect();
+                        tx.send(transactions).unwrap();
+                    }
+                }
+            }
+        });
+
+        Self { tx }
     }
 
-    pub fn get_address(&self) -> Address {
-        self.wallet.get_address(AddressIndex::New).unwrap().address
+    pub async fn address(self) -> Address {
+        let (tx, rx) = oneshot::channel();
+        self.tx.send(Message::Address { tx }).unwrap();
+
+        rx.await.unwrap()
     }
 
-    pub fn get_transactions(&self) -> Vec<TransactionDetails> {
-        self.wallet.list_transactions(false).unwrap()
+    pub async fn balance(self) -> Balance {
+        let (tx, rx) = oneshot::channel();
+        self.tx.send(Message::Balance { tx }).unwrap();
+
+        rx.await.unwrap()
+    }
+
+    pub async fn transactions(self) -> Vec<i64> {
+        let (tx, rx) = oneshot::channel();
+        self.tx.send(Message::Transactions { tx }).unwrap();
+
+        rx.await.unwrap()
     }
 }

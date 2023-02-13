@@ -1,4 +1,3 @@
-use btc::wallet;
 use concoct::composable::material::{text, NavigationBar, NavigationBarItem};
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container, Icon};
@@ -8,7 +7,6 @@ use futures::{Stream, StreamExt};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use skia_safe::{Color4f, Paint, RGB};
-
 use std::time::Duration;
 use taffy::style::{AlignItems, Dimension, JustifyContent};
 use tokio::time::interval;
@@ -24,6 +22,7 @@ fn android_main(android_app: android_activity::AndroidApp) {
 }
 
 mod btc;
+use btc::Wallet;
 
 mod currency;
 use currency::Currency;
@@ -63,6 +62,7 @@ pub fn app() {
     Container::build_column(|| {
         let display = state(|| Screen::Balance);
         let currency = state(|| Currency::Bitcoin);
+        let wallet = state(|| Wallet::new());
 
         let rate = state(|| Decimal::ZERO);
         remember([], || {
@@ -71,23 +71,19 @@ pub fn app() {
             })
         });
 
-        let new_wallet = state(|| wallet());
-
         Container::build_column(move || {
             let current_rate = rate.get().cloned();
             match display.get().cloned() {
-                Screen::Balance => {
-                    balance_screen(currency, current_rate, new_wallet.get().cloned())
-                }
+                Screen::Balance => balance_screen(currency, current_rate, wallet.get().cloned()),
                 Screen::Send => send_screen(display, currency, current_rate),
                 Screen::Request(request) => request_screen(
                     request,
                     display,
                     currency,
                     current_rate,
-                    new_wallet.get().cloned(),
+                    wallet.get().cloned(),
                 ),
-                Screen::History => history_screen(new_wallet.get().cloned()),
+                Screen::History => history_screen(wallet.get().cloned()),
             }
         })
         .flex_grow(1.)
