@@ -1,4 +1,4 @@
-use btc::MyWallet;
+use btc::wallet;
 use concoct::composable::material::{text, NavigationBar, NavigationBarItem};
 use concoct::composable::{material::Button, Text};
 use concoct::composable::{remember, state, stream, Container, Icon};
@@ -8,6 +8,7 @@ use futures::{Stream, StreamExt};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use skia_safe::{Color4f, Paint, RGB};
+
 use std::time::Duration;
 use taffy::style::{AlignItems, Dimension, JustifyContent};
 use tokio::time::interval;
@@ -70,19 +71,23 @@ pub fn app() {
             })
         });
 
-        let wallet = state(MyWallet::new);
+        let new_wallet = state(|| wallet());
 
         Container::build_column(move || {
             let current_rate = rate.get().cloned();
             match display.get().cloned() {
                 Screen::Balance => {
-                    balance_screen(display, currency, current_rate, &*wallet.get().as_ref())
+                    balance_screen(currency, current_rate, new_wallet.get().cloned())
                 }
                 Screen::Send => send_screen(display, currency, current_rate),
-                Screen::Request(request) => {
-                    request_screen(request, display, currency, current_rate, wallet)
-                }
-                Screen::History => history_screen(wallet),
+                Screen::Request(request) => request_screen(
+                    request,
+                    display,
+                    currency,
+                    current_rate,
+                    new_wallet.get().cloned(),
+                ),
+                Screen::History => history_screen(new_wallet.get().cloned()),
             }
         })
         .flex_grow(1.)

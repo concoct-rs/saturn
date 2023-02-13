@@ -9,6 +9,45 @@ use bdk::wallet::AddressIndex;
 use bdk::{Balance, KeychainKind, SyncOptions, TransactionDetails, Wallet};
 use bitcoin::{Address, PrivateKey};
 use std::str::FromStr;
+use std::sync::mpsc;
+use tokio::sync::oneshot;
+use tokio::task;
+
+pub enum Message {
+    Address { tx: oneshot::Sender<Address> },
+    Balance { tx: oneshot::Sender<Balance> },
+    Transactions { tx: oneshot::Sender<Vec<i64>> },
+}
+
+pub fn wallet() -> mpsc::Sender<Message> {
+    let (tx, rx) = mpsc::channel();
+
+    task::spawn_blocking(move || {
+        let wallet = MyWallet::new();
+        while let Ok(msg) = rx.recv() {
+            match msg {
+                Message::Address { tx } => {
+                    let address = wallet.get_address();
+                    tx.send(address).unwrap();
+                }
+                Message::Balance { tx } => {
+                    let balance = wallet.get_balance();
+                    tx.send(balance).unwrap();
+                }
+                Message::Transactions { tx } => {
+                    let transactions = wallet
+                        .get_transactions()
+                        .into_iter()
+                        .map(|transaction| transaction.received as i64 - transaction.sent as i64)
+                        .collect();
+                    tx.send(transactions).unwrap();
+                }
+            }
+        }
+    });
+
+    tx
+}
 
 pub struct MyWallet {
     blockchain: ElectrumBlockchain,

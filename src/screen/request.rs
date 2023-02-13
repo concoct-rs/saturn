@@ -1,19 +1,22 @@
 use super::{RequestScreen, Screen};
-use crate::btc::MyWallet;
+use crate::btc::Message;
 use crate::currency::{currency_input, Currency};
 use crate::full_width_button;
 use concoct::composable::state::State;
 use concoct::composable::{material::Button, Text};
-use concoct::composable::{state, Container};
+use concoct::composable::{remember, state, stream, Container};
 use concoct::dimension::{DevicePixels, Size};
 use concoct::modify::ModifyExt;
 use concoct::{Modifier, View};
+use futures::stream;
 use image::png::PngEncoder;
 use image::Rgb;
 use qrcode::QrCode;
 use rust_decimal::Decimal;
 use skia_safe::{Data, Image};
+use std::sync::mpsc::Sender;
 use taffy::style::{AlignItems, Dimension, JustifyContent};
+use tokio::sync::oneshot;
 
 #[track_caller]
 pub fn request_screen(
@@ -21,11 +24,29 @@ pub fn request_screen(
     display: State<Screen>,
     currency: State<Currency>,
     rate: Decimal,
-    wallet: State<MyWallet>,
+    wallet: Sender<Message>,
 ) {
     Container::build_column(move || {
         let amount = state(|| None::<String>);
-        let address = state(move || wallet.get().as_ref().get_address());
+        let address = state(move || None);
+
+        let wallet = wallet.clone();
+        remember([], move || {
+            let wallet = wallet.clone();
+            stream(
+                Box::pin(async move {
+                    stream::once(Box::pin(async move {
+                        let (tx, rx) = oneshot::channel();
+                        wallet.send(Message::Address { tx }).unwrap();
+
+                        rx.await.unwrap()
+                    }))
+                }),
+                move |txs| {
+                    *address.get().as_mut() = Some(txs);
+                },
+            )
+        });
 
         match request {
             RequestScreen::Share => {
@@ -44,53 +65,62 @@ pub fn request_screen(
                     *display.get().as_mut() = Screen::Request(RequestScreen::Amount);
                 });
 
-                Container::build_column(move || {
-                    let qr_uri = address.get().as_ref().to_qr_uri();
-                    Container::build_row(|| {})
-                        .size(Size::from(Dimension::Points(200.dp())))
-                        .modifier(Modifier.draw(move |layout, canvas| {
-                            let qr_code = QrCode::new(&qr_uri).unwrap();
-                            let image_buffer = qr_code
-                                .render::<Rgb<u8>>()
-                                .min_dimensions(layout.size.width as _, layout.size.height as _)
-                                .build();
+                if let Some(address) = address.get().cloned() {
+                    let a = address.clone();
+                    Container::build_column(move || {
+                        let qr_uri = a.to_qr_uri();
+                        Container::build_row(|| {})
+                            .size(Size::from(Dimension::Points(200.dp())))
+                            .modifier(Modifier.draw(move |layout, canvas| {
+                                let qr_code = QrCode::new(&qr_uri).unwrap();
+                                let image_buffer = qr_code
+                                    .render::<Rgb<u8>>()
+                                    .min_dimensions(layout.size.width as _, layout.size.height as _)
+                                    .build();
 
-                            let mut png_data = Vec::new();
-                            PngEncoder::new(&mut png_data)
-                                .encode(
-                                    &image_buffer,
-                                    image_buffer.width(),
-                                    image_buffer.height(),
-                                    image::ColorType::Rgb8,
-                                )
-                                .unwrap();
+                                let mut png_data = Vec::new();
+                                PngEncoder::new(&mut png_data)
+                                    .encode(
+                                        &image_buffer,
+                                        image_buffer.width(),
+                                        image_buffer.height(),
+                                        image::ColorType::Rgb8,
+                                    )
+                                    .unwrap();
 
-                            let image = Image::from_encoded(Data::new_copy(&png_data)).unwrap();
+                                let image = Image::from_encoded(Data::new_copy(&png_data)).unwrap();
 
-                            canvas.draw_image(image, (layout.location.x, layout.location.y), None);
-                        }))
-                        .view();
-                })
-                .flex_grow(1.)
-                .align_items(AlignItems::Center)
-                .view();
-
-                #[cfg(target_os = "android")]
-                full_width_button(address.get().as_ref().to_string(), move || {
-                    use android_intent::{with_current_env, Action, Extra, Intent};
-
-                    with_current_env(|env| {
-                        Intent::new(env, Action::Send)
-                            .with_type("text/plain")
-                            .with_extra(Extra::Text, address.get().as_ref().to_string())
-                            .into_chooser()
-                            .start_activity()
-                            .unwrap()
+                                canvas.draw_image(
+                                    image,
+                                    (layout.location.x, layout.location.y),
+                                    None,
+                                );
+                            }))
+                            .view();
                     })
-                });
+                    .flex_grow(1.)
+                    .align_items(AlignItems::Center)
+                    .view();
 
-                #[cfg(not(target_os = "android"))]
-                full_width_button(address.get().as_ref().to_string(), || {});
+                    #[cfg(target_os = "android")]
+                    full_width_button(address.get().as_ref().to_string(), move || {
+                        use android_intent::{with_current_env, Action, Extra, Intent};
+
+                        with_current_env(|env| {
+                            Intent::new(env, Action::Send)
+                                .with_type("text/plain")
+                                .with_extra(Extra::Text, address.get().as_ref().to_string())
+                                .into_chooser()
+                                .start_activity()
+                                .unwrap()
+                        })
+                    });
+
+                    #[cfg(not(target_os = "android"))]
+                    full_width_button(address.to_string(), || {});
+                } else {
+                    Text::new("Loading...")
+                }
             }
             RequestScreen::Amount => {
                 let new_amount = state(|| String::from("0"));

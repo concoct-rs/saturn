@@ -1,5 +1,9 @@
 use concoct::{
-    composable::{material::Button, state::State, Container, Text},
+    composable::{
+        material::Button,
+        state::{state, State},
+        Container, Text,
+    },
     dimension::{DevicePixels, Size},
     modify::{handler::keyboard_input::KeyboardHandler, HandlerModifier},
     Modifier, View,
@@ -59,8 +63,10 @@ impl fmt::Display for Currency {
 }
 
 #[track_caller]
-pub fn currency_text(currency: State<Currency>, value: State<String>, rate: Decimal) {
+pub fn currency_text(currency: State<Currency>, value: String, rate: Decimal) {
     Container::build_column(move || {
+        let value = state(|| value.clone());
+
         Container::build_column(move || {
             flex_text(format!(
                 "{}{}",
@@ -110,7 +116,7 @@ pub fn currency_text(currency: State<Currency>, value: State<String>, rate: Deci
 #[track_caller]
 pub fn currency_input(amount: State<String>, currency: State<Currency>, rate: Decimal) {
     Container::build_column(move || {
-        currency_text(currency, amount, rate);
+        currency_text(currency, amount.get().cloned(), rate);
 
         #[cfg(target_os = "android")]
         mobile::currency_input(amount, currency);
