@@ -7,12 +7,14 @@ use bdk::template::Bip84;
 use bdk::wallet::AddressIndex;
 use bdk::{Balance, KeychainKind};
 use bitcoin::{Address, PrivateKey};
+use std::fmt::Debug;
 use std::str::FromStr;
 use std::sync::mpsc;
 use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::task;
 use tokio::time::interval;
+use tracing::warn;
 
 enum Message {
     Address { tx: oneshot::Sender<Address> },
@@ -21,7 +23,7 @@ enum Message {
     Sync,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Wallet {
     tx: mpsc::Sender<Message>,
 }
@@ -35,9 +37,9 @@ impl Wallet {
             let mut interval = interval(Duration::from_secs(60));
 
             loop {
-                task::block_in_place(|| {
-                    task_tx.send(Message::Sync).unwrap();
-                });
+                if task::block_in_place(|| task_tx.send(Message::Sync).is_err()) {
+                    break;
+                }
 
                 interval.tick().await;
             }
@@ -68,11 +70,11 @@ impl Wallet {
                 match msg {
                     Message::Address { tx } => {
                         let address_info = wallet.get_address(AddressIndex::New).unwrap();
-                        tx.send(address_info.address).unwrap();
+                        send_or_warn(tx, address_info.address);
                     }
                     Message::Balance { tx } => {
                         let balance = wallet.get_balance().unwrap();
-                        tx.send(balance).unwrap();
+                        send_or_warn(tx, balance);
                     }
                     Message::Transactions { tx } => {
                         let transactions = wallet
@@ -83,7 +85,7 @@ impl Wallet {
                                 transaction.received as i64 - transaction.sent as i64
                             })
                             .collect();
-                        tx.send(transactions).unwrap();
+                        send_or_warn(tx, transactions);
                     }
                     Message::Sync => {
                         wallet.sync(&blockchain, Default::default()).unwrap();
@@ -114,5 +116,11 @@ impl Wallet {
         self.tx.send(Message::Transactions { tx }).unwrap();
 
         rx.await.unwrap()
+    }
+}
+
+fn send_or_warn<T: Debug>(tx: oneshot::Sender<T>, value: T) {
+    if let Err(error) = tx.send(value) {
+        warn!("Dropped message: {:?}", error);
     }
 }

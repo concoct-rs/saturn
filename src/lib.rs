@@ -21,11 +21,11 @@ fn android_main(android_app: android_activity::AndroidApp) {
     concoct::render::run(app, android_app);
 }
 
-mod wallet;
-use wallet::Wallet;
-
 mod currency;
 use currency::Currency;
+
+mod wallet;
+use wallet::Wallet;
 
 mod screen;
 use screen::{balance_screen, history_screen, request_screen, send_screen, RequestScreen, Screen};
@@ -60,7 +60,7 @@ async fn make_stream() -> impl Stream<Item = Decimal> {
 #[track_caller]
 pub fn app() {
     Container::build_column(|| {
-        let display = state(|| Screen::Balance);
+        let screen = state(|| Screen::Balance);
         let currency = state(|| Currency::Bitcoin);
         let wallet = state(|| Wallet::new());
 
@@ -73,17 +73,17 @@ pub fn app() {
 
         Container::build_column(move || {
             let current_rate = rate.get().cloned();
-            match display.get().cloned() {
+            match screen.get().cloned() {
                 Screen::Balance => balance_screen(currency, current_rate, wallet.get().cloned()),
-                Screen::Send => send_screen(display, currency, current_rate),
+                Screen::Send => send_screen(screen, currency, current_rate),
                 Screen::Request(request) => request_screen(
                     request,
-                    display,
+                    screen,
                     currency,
                     current_rate,
                     wallet.get().cloned(),
                 ),
-                Screen::History => history_screen(wallet.get().cloned()),
+                Screen::History => history_screen(screen, wallet.get().cloned()),
             }
         })
         .flex_grow(1.)
@@ -100,9 +100,9 @@ pub fn app() {
                     .view()
                 },
                 || text("Wallet"),
-                move || *display.get().as_mut() = Screen::Balance,
+                move || *screen.get().as_mut() = Screen::Balance,
             )
-            .is_selected(display.get().cloned() == Screen::Balance)
+            .is_selected(screen.get().cloned() == Screen::Balance)
             .view();
 
             NavigationBarItem::build(
@@ -114,9 +114,9 @@ pub fn app() {
                     .view()
                 },
                 || text("Send"),
-                move || *display.get().as_mut() = Screen::Send,
+                move || *screen.get().as_mut() = Screen::Send,
             )
-            .is_selected(display.get().cloned() == Screen::Send)
+            .is_selected(screen.get().cloned() == Screen::Send)
             .view();
 
             NavigationBarItem::build(
@@ -128,13 +128,9 @@ pub fn app() {
                     .view()
                 },
                 || text("Request"),
-                move || *display.get().as_mut() = Screen::Request(RequestScreen::Share),
+                move || *screen.get().as_mut() = Screen::Request(RequestScreen::Share),
             )
-            .is_selected(if let Screen::Request(_) = display.get().cloned() {
-                true
-            } else {
-                false
-            })
+            .is_selected(matches!(screen.get().cloned(), Screen::Request(_)))
             .view();
 
             NavigationBarItem::build(
@@ -146,9 +142,9 @@ pub fn app() {
                     .view()
                 },
                 || text("History"),
-                move || *display.get().as_mut() = Screen::History,
+                move || *screen.get().as_mut() = Screen::History,
             )
-            .is_selected(display.get().cloned() == Screen::History)
+            .is_selected(screen.get().cloned() == Screen::History)
             .view();
         })
     })
