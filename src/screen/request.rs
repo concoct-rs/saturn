@@ -94,13 +94,13 @@ pub fn request_screen(
                     .view();
 
                     #[cfg(target_os = "android")]
-                    full_width_button(address.get().as_ref().to_string(), move || {
+                    full_width_button(address.to_string(), move || {
                         use android_intent::{with_current_env, Action, Extra, Intent};
 
                         with_current_env(|env| {
                             Intent::new(env, Action::Send)
                                 .with_type("text/plain")
-                                .with_extra(Extra::Text, address.get().as_ref().to_string())
+                                .with_extra(Extra::Text, address.to_string())
                                 .into_chooser()
                                 .start_activity()
                                 .unwrap()
